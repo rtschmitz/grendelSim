@@ -60,15 +60,15 @@ Beam particle type, event offset, rescaling, and four-vector path are configured
 
 ## Output
 
-Both workflows write a seed-tagged `Sim_<id>grendelSim.root` file in the build directory by default; `/run/fname` replaces that prefix. The `Events` tree uses standalone schema version 2 with one row per simulated event. No GRENDEL headers, shared library, ROOT dictionary, PCM, or rootmap is needed to read it.
+Both workflows write a seed-tagged `Sim_<id>grendelSim.root` file in the build directory by default; `/run/fname` replaces that prefix. The `Events` tree uses standalone schema version 3 with one row per simulated event. No GRENDEL headers, shared library, ROOT dictionary, PCM, or rootmap is needed to read it.
 
 The event record contains only `schemaVersion`, `runID`, `eventID`, `processID`, `eventWeight`, and `kaonCavern`. Selected particle collections use the prefixes `muon_`, `gamma_`, `neutron_`, `electron_`, and `kaon_`. Each stores PDG, track, and parent IDs, initial and final copy numbers, times, kinetic energies, positions where available, total track length, processes, and volume names. Elements at the same vector index describe the same track. Which particle species are collected is controlled in `grTrackingAction`.
 
-The `scint_` collection is the reusable detector-interface record. Each crossing stores track ID, parent ID, PDG ID, sensitive-volume copy number, deposited energy, entry and exit times and positions, entry process, and origin volume. The name is retained for compatibility, but these are sensitive-detector-volume crossings used for downstream geometry and detector-response studies.
+The `scint_` collection is the reusable detector-interface record. Each sensitive-volume entry stores track ID, parent ID, PDG ID, copy number, incoming kinetic energy, global time, position, unit direction vector, creator process, and origin volume. The name is retained for compatibility, but these are sensitive-detector-volume crossings used for downstream geometry and detector-response studies.
 
-Branch names carry units: energy is MeV, positions are metres, sensitive-volume hit times are ns, and selected-track times are seconds. The writer uses LZ4 level 4 compression and 50 MiB autoflush clusters to minimize production CPU.
+Branch names carry units: energy is MeV, positions are metres, sensitive-volume hit times are ns, and selected-track times are seconds. Persisted floating-point vectors use `Float_t`; Geant4 calculations remain double precision. At 100 m, coordinate precision is about 0.001 cm. The writer performs one tree fill per event and uses LZ4 level 4 compression and 50 MiB autoflush clusters to prioritize production CPU.
 
-Schema version 2 removes all optical-photon, PMT, crystal, detector-trigger, aggregate energy-deposit, and detector-category branches. It also removes specialized track quantities such as accumulated deposits, interaction counters, momentum duplicates, cavern crossing coordinates, and optical-photon tracks. Optical transport physics and PMT geometry are not changed by this output cleanup.
+Schema version 3 records only entry phase space, eliminating the previous duplicate exit records and the invalid energy subtraction between independent hit objects. It also removes all optical-photon, PMT, crystal, detector-trigger, aggregate energy-deposit, and detector-category branches. It also removes specialized track quantities such as accumulated deposits, interaction counters, momentum duplicates, cavern crossing coordinates, and optical-photon tracks. Optical transport physics and PMT geometry are not changed by this output cleanup.
 
 ## Layout
 
