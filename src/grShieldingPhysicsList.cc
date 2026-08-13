@@ -72,7 +72,6 @@
 #include "G4NistManager.hh"
 
 #include "G4DecayPhysics.hh"
-#include "G4RadioactiveDecayPhysics.hh"
 //#include "G4EmProcessOptions.hh"  OLD G4.9
 #include "G4EmProcessOptions.hh"
 #include "G4EmStandardPhysics_option4.hh"
@@ -128,7 +127,6 @@ grShieldingList::grShieldingList( G4int verbose, G4String LEN_model, const boost
   // Decays
   this->RegisterPhysics( new G4DecayPhysics(verbose) );
   //if ( rad == true ) this->RegisterPhysics( new G4RadioactiveDecayPhysics(verbose) );
-  this->RegisterPhysics( new G4RadioactiveDecayPhysics(verbose) );
 //  /*
   size_t find = LEN_model.find("LEND__");
   G4String evaluation;
