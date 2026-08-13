@@ -112,13 +112,11 @@ void grSteppingAction::UserSteppingAction(const G4Step * theStep){
   G4double myStepLength = 0.0;
   myStepLength = theStep->GetStepLength();
   G4double myEnergyDelta = 0.0;
-  G4double myEnergyEDep = 0.0;
   G4double eventTime = 0.0;
   G4double totalEnergy = 0.0;
   G4String particleName = "";
 
   particleName = theTrack->GetDefinition()->GetParticleName();
-  myEnergyEDep = theStep->GetTotalEnergyDeposit();
   myEnergyDelta = theStep->GetDeltaEnergy();
   G4int stepID = theStep->GetTrack()->GetCurrentStepNumber();
   G4int eventID = eventInformation->GetEventID();
@@ -128,13 +126,6 @@ void grSteppingAction::UserSteppingAction(const G4Step * theStep){
   //
   // Get information about the start point of the step
   //
-  G4ThreeVector position;
-  G4double Yposition;
-  G4double Zposition;
-  G4double Xposition;
-  G4double Xfposition;
-  G4double Yfposition;
-  G4double Zfposition;
   G4ThreeVector myStartPosition;
   G4ThreeVector myStartDirection;
   G4double myStartXYMagnitude;
@@ -211,7 +202,6 @@ void grSteppingAction::UserSteppingAction(const G4Step * theStep){
 
     //Was the photon absorbed by the absorption process
     if(thePostPoint->GetProcessDefinedStep()->GetProcessName()=="OpAbsorption"){
-      eventInformation->IncAbsorption();
       trackInformation->AddTrackStatusFlag(absorbed);
     }
 
@@ -259,7 +249,6 @@ void grSteppingAction::UserSteppingAction(const G4Step * theStep){
       break;
       case Absorption:
        trackInformation->AddTrackStatusFlag(boundaryAbsorbed);
-        eventInformation->IncBoundaryAbsorption();
     //G4cout << thePostPV->GetName() << G4endl;
   break;
       case Detection:
@@ -347,7 +336,6 @@ void grSteppingAction::UserSteppingAction(const G4Step * theStep){
   G4ThreeVector myEndPosition;
   G4ThreeVector myEndDirection;
   G4double myEndKineticEnergy = -1.0;
-  G4double sumEnergyDep=0;
   G4double sumEnergyDelta=0;
   G4String endMat = "";
   G4int nbOfInteractions = 0;
@@ -458,82 +446,6 @@ void grSteppingAction::UserSteppingAction(const G4Step * theStep){
     }
   }
 */
-/////////// muon interaction manager ///////////////
-        if( particleName.contains("mu") ){
-                //sum energy deposit
-                sumEnergyDep=eventInformation->GetMuonTrack(theStep->GetTrack()->GetTrackID())->GetEnergyDeposit()+myEnergyEDep;
-                eventInformation->GetMuonTrack(theStep->GetTrack()->GetTrackID())->SetEnergyDeposit(sumEnergyDep);
-                if((myStartVolumeName.contains("rockPhysic") && myEndVolumeName.contains("World") && eventInformation->GetMuonTrack(theStep->GetTrack()->GetTrackID())->GetXposition()==-100))
-                {
-                                position = myEndPosition;
-                                Xposition = position.x();// or getX()
-                                Yposition = position.y();
-                                Zposition = position.z();
-
-                                eventInformation->GetMuonTrack(theStep->GetTrack()->GetTrackID())->SetZposition(Zposition/m);
-                                eventInformation->GetMuonTrack(theStep->GetTrack()->GetTrackID())->SetYposition(Yposition/m);
-                                eventInformation->GetMuonTrack(theStep->GetTrack()->GetTrackID())->SetXposition(Xposition/m);
-                                //std::cout << "muon enter the cavern" <<std::endl;
-                                //std::cout << "Xposition:" << Xposition <<std::endl;
-                                //std::cout << "Yposition:" << Yposition <<std::endl;
-                                //std::cout << "Zposition:" << Zposition <<std::endl;
-                }
-
-                if((myStartVolumeName.contains("World") && myEndVolumeName.contains("rockPhysic") && eventInformation->GetMuonTrack(theStep->GetTrack()->GetTrackID())->GetXposition()>-100))
-                {
-                                position = myEndPosition;
-                                Xfposition = position.x();// or getX()
-                                Yfposition = position.y();
-                                Zfposition = position.z();
-                                eventInformation->GetMuonTrack(theStep->GetTrack()->GetTrackID())->SetZfposition(Zfposition/m);
-                                eventInformation->GetMuonTrack(theStep->GetTrack()->GetTrackID())->SetYfposition(Yfposition/m);
-                                eventInformation->GetMuonTrack(theStep->GetTrack()->GetTrackID())->SetXfposition(Xfposition/m);
-                }
-
-/*
-    //muon enters scintillator
-    if((!myStartVolumeName.contains("scint") && !myStartVolumeName.contains("Scint"))
-      && (myEndVolumeName.contains("scint") || myEndVolumeName.contains("Scint"))){
-
-      G4String sdScintName="Scint_SD";
-      grScintSD* scintSD = (grScintSD*)G4SDManager::GetSDMpointer()->FindSensitiveDetector(sdScintName);
-      G4cout << "entering scint! copy number is " << postCopyNo << G4endl;
-      scintSD->ProcessHitsEnter(theStep,NULL);
-    }
-*/
-    //muon exits scintillator
-/*
-    if((myStartVolumeName.contains("scint") || myStartVolumeName.contains("Scint"))
-      && (!myEndVolumeName.contains("scint") && !myEndVolumeName.contains("Scint"))){
-
-      G4String sdScintName="Scint_SD";
-      grScintSD* scintSD = (grScintSD*)G4SDManager::GetSDMpointer()->FindSensitiveDetector(sdScintName);
-      G4cout << "exiting scint! copy number is " << preCopyNo << G4endl;
-      scintSD->ProcessHitsExit(theStep,NULL);
-    }
-*/
-//  G4cout << "muon process is: " << myEndProcessName << G4endl;
-  }
-
-/*
-///////////// gamma interaction manager ///////////////
-  if( particleName.contains("gamma") ){
-    //sum energy deposit
-    sumEnergyDep=eventInformation->GetGammaTrack(theStep->GetTrack()->GetTrackID())->GetEnergyDeposit()+myEnergyEDep;
-    eventInformation->GetGammaTrack(theStep->GetTrack()->GetTrackID())->SetEnergyDeposit(sumEnergyDep);
-//  if(theTrack->GetCurrentStepNumber()==1) G4cout << "Gamma track creator process is: " << theTrack->GetCreatorProcess()->GetProcessName() << " and energy is " << eventInformation->GetGammaTrack(trackID)->GetInitialEnergy() << G4endl;
-  }
-*/
-//
-
-/////////////// electron debugging ////////////////
-/*
-  if(particleName.contains("e+") || particleName.contains("e-")){
-    if(theTrack->GetCurrentStepNumber()==1) G4cout << "Electron track creator process is: " << theTrack->GetCreatorProcess()->GetProcessName() << " and energy is " << theTrack->GetTotalEnergy() << G4endl;// " *and kinetic energy is* " << theTrack->GetKineticEnergy() << G4endl;
-    }
-
-*/    sumEnergyDep=eventInformation->GetEventEnergyDeposit()+myEnergyEDep;
-    eventInformation->SetEventEnergyDeposit(sumEnergyDep);
 
 
 }

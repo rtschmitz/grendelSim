@@ -11,11 +11,11 @@
 
 grElectronTrack::grElectronTrack() :
       trackID(-1),
+      pdgID(0),
       initialProcessName(""),finalProcessName(""),
       initialVolumeName(""), finalVolumeName(""),
       initialTime_s(0.), finalTime_s(0.),
       initialEnergy_MeV(0.),finalEnergy_MeV(0.),
-      totalEnergy_MeV(0.), energyDeposit_MeV(0.),
       parentID(-1),
       initialPositionX_m(0.),
 //      finalPositionX_m(0.),
@@ -23,11 +23,7 @@ grElectronTrack::grElectronTrack() :
 //      finalPositionY_m(0.),
       initialPositionZ_m(0.),
 //      finalPositionZ_m(0.),
-      totalTrackLength_m(0.0),
-      nbOfElastics(-1),
-      nbOfInteractions(-1),
-      energyDiff(0.)
-      {
+      totalTrackLength_m(0.0) {
 
 }
 
@@ -38,6 +34,7 @@ grElectronTrack::~grElectronTrack() {
 const grElectronTrack& grElectronTrack::operator=(const grElectronTrack &right){
 
   trackID        = right.trackID           ;
+  pdgID            = right.pdgID;
   initialProcessName = right.initialProcessName;
   finalProcessName   = right.finalProcessName  ;
   initialVolumeName  = right.initialVolumeName ;
@@ -46,8 +43,6 @@ const grElectronTrack& grElectronTrack::operator=(const grElectronTrack &right){
   finalTime_s        = right.finalTime_s       ;
   initialEnergy_MeV  = right.initialEnergy_MeV ;
   finalEnergy_MeV    = right.finalEnergy_MeV   ;
-  energyDeposit_MeV  = right.energyDeposit_MeV ;
-  totalEnergy_MeV    = right.totalEnergy_MeV   ;
   parentID           = right.parentID          ;
   initialPositionX_m = right.initialPositionX_m;
 //  finalPositionX_m   = right.finalPositionX_m  ;
@@ -56,9 +51,6 @@ const grElectronTrack& grElectronTrack::operator=(const grElectronTrack &right){
   initialPositionZ_m = right.initialPositionZ_m;
 //  finalPositionZ_m   = right.finalPositionZ_m  ;
   totalTrackLength_m = right.totalTrackLength_m;
-  nbOfElastics       = right.nbOfElastics      ;
-  nbOfInteractions   = right.nbOfInteractions  ;
-  energyDiff         = right.energyDiff        ;
   return *this;
 }
 

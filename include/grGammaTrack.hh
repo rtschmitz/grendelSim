@@ -16,7 +16,6 @@
 #include <iostream>
 #include <vector>
 #include "TString.h"
-#include "TVector3.h"
 //==============================================================================
 class grGammaTrack {
 public:
@@ -27,12 +26,12 @@ public:
 
 
   void SetTrackID(Int_t tID){trackID = tID; }
+  void SetPDGID(Int_t value){ pdgID = value; }
+  Int_t GetPDGID() const { return pdgID; }
   void SetTimeOfFirstProcess(Double_t timeOfFirstProcess){ initialTime_ns = timeOfFirstProcess; }
   void SetTimeOfLastProcess(Double_t timeOfLastProcess){ finalTime_ns = timeOfLastProcess; }
   void SetInitialEnergy(Double_t firstEnergy){ initialEnergy_MeV = firstEnergy; }
   void SetFinalEnergy(Double_t lastEnergy){ finalEnergy_MeV = lastEnergy; }
-  void SetTotalEnergy(Double_t totalEnergy){totalEnergy_MeV = totalEnergy; }
-  void SetEnergyDeposit(Double_t depositEnergy){energyDeposit_MeV = depositEnergy; }
   void SetParentID(Int_t pID){ parentID = pID; }
   void SetFirstPositionX(Double_t firstPositionX){ initialPositionX_m = firstPositionX; }
   void SetLastPositionX(Double_t lastPositionX) { finalPositionX_m = lastPositionX; }
@@ -48,7 +47,6 @@ public:
   Double_t GetTimeOfLastProcess()const{ return finalTime_ns; }
   Double_t GetInitialEnergy()const{ return initialEnergy_MeV; }
   Double_t GetFinalEnergy()const{ return finalEnergy_MeV; }
-  Double_t GetEnergyDeposit()const{ return energyDeposit_MeV; }
   Int_t    GetParentID()const{ return parentID; }
   Double_t GetFirstPositionX()const{ return initialPositionX_m; }
   Double_t GetLastPositionX()const{ return finalPositionX_m; }
@@ -57,7 +55,6 @@ public:
   Double_t GetFirstPositionZ()const{ return initialPositionZ_m; };
   Double_t GetLastPositionZ()const{ return finalPositionZ_m; }
   Double_t GetTotalTrackLength()const{ return totalTrackLength_m; }
-  Double_t GetTotalEnergy() const{return totalEnergy_MeV; }
 
 
   void SetFirstProcessName(std::string firstProcessName){ initialProcessName = firstProcessName; }
@@ -76,8 +73,6 @@ public:
         Int_t   GetLastCopyNo()const{ return finalCopyNo; }
 
 
-  void SetGammaOutScintillator(bool outScint) {gammaOutScint = outScint;}
-  bool GetGammaOutScintillator()const{return gammaOutScint;}
 
   // order tracks accordong to timing information
   static bool compareHits(grGammaTrack* const &a, grGammaTrack* const &b);
@@ -94,6 +89,7 @@ public:
         Int_t finalCopyNo          ; //copyNo of final volume
 
   Int_t trackID;
+  Int_t pdgID;
   Double_t initialTime_ns       ; //Global time when the first process occurs
    Double_t finalTime_ns         ; //Global time when the last process occurs
   Double_t initialEnergy_MeV     ; //The kinetic energy at the begin of the track
@@ -108,7 +104,6 @@ public:
   Double_t initialPositionZ_m  ; //The position of the vertex of the track
   Double_t finalPositionZ_m    ; //The position of the end of the track
   Double_t totalTrackLength_m  ; //The total track length of the track
-  bool gammaOutScint;    //The gamma exited the scintillator to the world without detection == true
 
 
 

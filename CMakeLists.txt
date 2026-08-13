@@ -39,7 +39,6 @@ set(GRENDEL_SOURCES
   src/grPMTHit.cc
   src/grPMTParameterisation.cc
   src/grPMTSD.cc
-  src/grPhotonTrack.cc
   src/grPrimaryGeneratorAction.cc
   src/grPrimaryGeneratorActionMessenger.cc
   src/grPrimaryGeneratorMessenger.cc

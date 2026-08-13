@@ -29,23 +29,6 @@ grStackingAction::~grStackingAction()
 G4ClassificationOfNewTrack
 grStackingAction::ClassifyNewTrack(const G4Track * aTrack){
 
-  grUserEventInformation* eventInformation=
-    (grUserEventInformation*)G4EventManager::GetEventManager()
-    ->GetConstCurrentEvent()->GetUserInformation();
-
-  //Count what process generated the optical photons
-  if(aTrack->GetDefinition()==G4OpticalPhoton::OpticalPhotonDefinition()){
-    eventInformation->IncPhotonCount();
-    // particle is optical photon
-    if(aTrack->GetParentID() > 0){
-   //   // particle is secondary
-      if(aTrack->GetCreatorProcess()->GetProcessName()=="Scintillation")
-        eventInformation->IncPhotonCount_Scint();
-      if(aTrack->GetCreatorProcess()->GetProcessName()=="Cerenkov")
-        eventInformation->IncPhotonCount_Cheren();
-      }
-
-    }
   return fUrgent;
 }
 

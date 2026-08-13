@@ -25,7 +25,6 @@ public:
 private:
   grHistoManager* histoManager;
   G4int verbose;
-  G4bool photonTrackStorage;
   G4bool gammaTrackStorage;
   G4bool neutronTrackStorage;
   G4bool muonTrackStorage;
@@ -35,7 +34,6 @@ private:
   G4int parentID;
   G4String particleName;
   G4ThreeVector initialPosition;
-  G4ThreeVector initialMomentum;
   G4String initialVolumeName;
   G4int initialCopyNo;
   G4String initialProcessName;
