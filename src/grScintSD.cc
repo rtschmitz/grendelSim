@@ -167,23 +167,85 @@ G4bool grScintSD::ProcessHitsEnter(const G4Step* aStep,G4TouchableHistory*)
 
   G4String vertexVolume = GetVertexVolumeNameSafe(aStep);
 //  G4cout << vertexVolume << " " << G4endl;
-  const G4double kineticEnergy = aStep->GetPostStepPoint()->GetKineticEnergy();
+  G4double edep;
+  if(aStep->GetTrack()->GetDefinition()->GetParticleName().contains("e+") || aStep->GetTrack()->GetDefinition()->GetParticleName().contains("e-")
+      || aStep->GetTrack()->GetDefinition()->GetParticleName().contains("mu")
+      || aStep->GetTrack()->GetDefinition()->GetParticleName().contains("tau")
+   ){ edep = aStep->GetPostStepPoint()->GetTotalEnergy(); }
+  else edep = aStep->GetPostStepPoint()->GetKineticEnergy();
   grScintHit* hit = new grScintHit();
     hit->SetTrackID  (aStep->GetTrack()->GetTrackID());          // trackID
     hit->SetParentID (aStep->GetTrack()->GetParentID());         // parentID
-    hit->SetKineticEnergy(kineticEnergy);
+    hit->SetHitEnergy(edep);
     hit->SetHitTime(aStep->GetPostStepPoint()->GetGlobalTime());
     hit->SetHitPosition(aStep->GetPostStepPoint()->GetPosition());
-    hit->SetDirection(aStep->GetPostStepPoint()->GetMomentumDirection());
     //hit->SetParticleName( aStep->GetTrack()->GetDefinition()->GetParticleName() );
     hit->SetParticleName( aStep->GetTrack()->GetDefinition()->GetPDGEncoding() );
-    hit->SetCopyNo(copyNo); // sensitive-volume identifier
+    hit->SetCopyNo(copyNo); //energy deposit
     hit->SetProcName(creaProcName); //creation process of the particle that caused the hit
     hit->SetCreatorVolName(vertexVolume); //creation volume of the particle that caused the hit
     scintCollection->insert(hit);
   return true;
 }
 
+G4bool grScintSD::ProcessHitsExit(const G4Step* aStep,G4TouchableHistory*)
+{
+
+  // GARGOYLE active layers are simple placements and do not have the old
+  // GRENDEL replica depth used by GetCopyNumber(2)/GetCopyNumber(4).  Handle
+  // them first using only the depth-0 physical-volume copy number.
+  G4int copyNo = GetGargoyleCopyNo(aStep, false);
+
+  if (copyNo < 0) {
+    G4int volCopyNo = aStep->GetPreStepPoint()->GetTouchable()->GetCopyNumber(2);
+    copyNo=0;
+    if(volCopyNo<6){
+
+    //get the detector to retrieve layer information
+  //  grDetectorConstruction* detector = (grDetectorConstruction*)G4RunManager::GetRunManager()
+  //                                            ->GetUserDetectorConstruction();
+    //get number of bars per layer
+  //  G4int nBarPerLayer = detector->GetNBarPerLayer();
+
+    G4int nBarPerLayer = 9*6*4;
+
+    char layerNumberChar = aStep->GetPreStepPoint()->GetTouchable()->GetVolume(2)->GetName().back();
+    G4int layerNumber = layerNumberChar-48;
+    G4int subStackCopyNo = aStep->GetPreStepPoint()->GetTouchable()->GetCopyNumber(4);
+    copyNo = nBarPerLayer*layerNumber + volCopyNo + 4*subStackCopyNo;
+    } else {copyNo = volCopyNo;}
+  }
+
+  //G4cout << "Exiting scint! Copy Number is: " << copyNo << G4endl;
+
+  const G4VProcess* creaProc= aStep->GetTrack()->GetCreatorProcess();
+  G4String creaProcName;
+
+  if (creaProc) creaProcName = creaProc->GetProcessName();
+  else creaProcName = "0";
+
+  G4String vertexVolume = GetVertexVolumeNameSafe(aStep);
+//  G4cout << vertexVolume << " " << G4endl;
+  G4double edep;
+  if(aStep->GetTrack()->GetDefinition()->GetParticleName().contains("e+") || aStep->GetTrack()->GetDefinition()->GetParticleName().contains("e-")
+      || aStep->GetTrack()->GetDefinition()->GetParticleName().contains("mu")
+      || aStep->GetTrack()->GetDefinition()->GetParticleName().contains("tau")
+   ){ edep = aStep->GetPostStepPoint()->GetTotalEnergy(); }
+  else edep = aStep->GetPostStepPoint()->GetKineticEnergy();
+  grScintHit* hit = new grScintHit();
+    hit->SetTrackID  (aStep->GetTrack()->GetTrackID());          // trackID
+    hit->SetParentID (aStep->GetTrack()->GetParentID());         // parentID
+    hit->SetExitEnergy     (edep); // total Energy
+    hit->SetExitTime(aStep->GetPostStepPoint()->GetGlobalTime());// Global Time
+    hit->SetExitPosition(aStep->GetPostStepPoint()->GetPosition());
+    //hit->SetParticleName( aStep->GetTrack()->GetDefinition()->GetParticleName() );
+    hit->SetParticleName( aStep->GetTrack()->GetDefinition()->GetPDGEncoding() );
+    hit->SetCopyNo(copyNo); //energy deposit
+    hit->SetProcName(creaProcName); //creation process of the particle that caused the hit
+    hit->SetCreatorVolName(vertexVolume); //creation volume of the particle that caused the hit
+    scintCollection->insert(hit);
+  return true;
+}
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void grScintSD::EndOfEvent(G4HCofThisEvent*)
