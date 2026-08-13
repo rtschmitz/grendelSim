@@ -263,7 +263,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     // Concrete/rock envelope: 2 m beyond the rotated tunnel cutout in x/y.
     // Computing the bounds from tunnelProfile makes the envelope work for any
     // crossSectionRotZ value without hand-swapping dimensions.
-    const G4double concreteThickness = 2.5 * m;
+    const G4double concreteThickness = 1 * m;
     G4double tunnelMinX = tunnelProfile[0].x();
     G4double tunnelMaxX = tunnelProfile[0].x();
     G4double tunnelMinY = tunnelProfile[0].y();
