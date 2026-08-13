@@ -411,6 +411,10 @@ void grSteppingAction::UserSteppingAction(const G4Step * theStep){
 
         scintSD = (grScintSD*)G4SDManager::GetSDMpointer()->FindSensitiveDetector(sdScintName);
 
+      if(startIsScint){
+        scintSD->ProcessHitsExit(theStep,NULL);
+      }
+
       if(endIsScint){
         scintSD->ProcessHitsEnter(theStep,NULL);
       }

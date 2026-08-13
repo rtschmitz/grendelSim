@@ -42,6 +42,8 @@ public:
   G4String GetProcName() const { return procName; }
   void SetCreatorVolName(G4String value) { creatorVolName = value; }
   G4String GetCreatorVolName() const { return creatorVolName; }
+  void SetEntering(G4bool value) { entering = value; }
+  G4bool IsEntering() const { return entering; }
 
 private:
   G4int trackID;
@@ -54,6 +56,7 @@ private:
   G4String procName;
   G4String creatorVolName;
   G4int copyNo;
+  G4bool entering;
 };
 
 typedef std::vector<grScintHit*> grScintHitVector;
