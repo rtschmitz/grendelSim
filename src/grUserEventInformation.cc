@@ -18,8 +18,8 @@ typename Sequence::value_type FindTrack(Sequence& sequence, G4int trackID) {
 }
 
 grUserEventInformation::grUserEventInformation()
-  : runID(-1), eventID(-1), processID(0), eventWeight(0.), trident(false),
-    tridentGamma(false), kaonCavern(false), gammaLastTrackID(-1),
+  : runID(-1), eventID(-1), processID(0), eventWeight(0.),
+    kaonCavern(false), gammaLastTrackID(-1),
     neutronLastTrackID(-1), muonLastTrackID(-1), electronLastTrackID(-1),
     mcpLastTrackID(-1) {}
 
@@ -32,8 +32,6 @@ void grUserEventInformation::Reset() {
   DeleteAll(ElectronTracks);
   DeleteAll(MCPTracks);
   ScintHits.clear(); // Geant4 owns sensitive-detector hits.
-  trident = false;
-  tridentGamma = false;
   kaonCavern = false;
 }
 

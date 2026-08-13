@@ -28,10 +28,6 @@ public:
   void SetProcessID(G4int value) { processID = value; }
   G4int GetProcessID() const { return processID; }
 
-  void SetTrident(bool value) { trident = value; }
-  bool GetTrident() const { return trident; }
-  void SetTridentGamma(bool value) { tridentGamma = value; }
-  bool GetTridentGamma() const { return tridentGamma; }
   void SetKaonCavern(bool value) { kaonCavern = value; }
   bool GetKaonCavern() const { return kaonCavern; }
 
@@ -76,8 +72,6 @@ private:
   G4int eventID;
   G4int processID;
   G4double eventWeight;
-  bool trident;
-  bool tridentGamma;
   bool kaonCavern;
   G4int gammaLastTrackID;
   G4int neutronLastTrackID;

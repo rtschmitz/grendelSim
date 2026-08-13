@@ -27,7 +27,7 @@
 struct grOutputBuffer {
   Int_t schemaVersion, runID, eventID, processID;
   Double_t eventWeight;
-  Bool_t trident, tridentGamma, kaonCavern;
+  Bool_t kaonCavern;
 
   TRACK_FIELDS(DECLARE_VECTOR, muon)
   TRACK_FIELDS(DECLARE_VECTOR, gamma)
@@ -48,7 +48,7 @@ struct grOutputBuffer {
 #define BRANCH(N) tree->Branch(#N, &N)
 void grOutputBuffer::branch(TTree* tree) {
   BRANCH(schemaVersion); BRANCH(runID); BRANCH(eventID); BRANCH(processID);
-  BRANCH(eventWeight); BRANCH(trident); BRANCH(tridentGamma); BRANCH(kaonCavern);
+  BRANCH(eventWeight); BRANCH(kaonCavern);
   TRACK_FIELDS(BRANCH_VECTOR, muon)
   TRACK_FIELDS(BRANCH_VECTOR, gamma)
   TRACK_FIELDS(BRANCH_VECTOR, neutron)
@@ -116,7 +116,7 @@ void grHistoManager::FillEventNtuple(grUserEventInformation& e) {
   o.clear();
   o.schemaVersion = 2;
   o.runID = e.GetRunID(); o.eventID = e.GetEventID(); o.processID = e.GetProcessID(); o.eventWeight = e.GetEventWeight();
-  o.trident = e.GetTrident(); o.tridentGamma = e.GetTridentGamma(); o.kaonCavern = e.GetKaonCavern();
+  o.kaonCavern = e.GetKaonCavern();
 
   const grMuonTrackVector& muons = *e.GetMuonTracks();
   for (std::size_t i=0; i<muons.size(); ++i) { grMuonTrack* t=muons[i]; FILL_TRACK(o,t,muon) }
