@@ -22,6 +22,28 @@ cmake --build build --parallel
 
 CMake copies the retained runtime configuration to `build/config`. Run the executable from the build directory so the configuration, optical tables, and beam input resolve through their documented relative paths.
 
+## Interactive visualization
+
+Build with visualization support (the default), then launch the executable without arguments:
+
+```sh
+cmake -S . -B build
+cmake --build build --parallel
+cd build
+./grendelSim
+```
+
+At the Geant4 prompt, load the visualization setup and generate events:
+
+```text
+/control/execute vis.mac
+/run/beamOn 1
+```
+
+`vis.mac` draws the GRENDEL geometry, stores and colors particle trajectories, and configures a 4 GeV cosmic muon for convenient event viewing. It does not start a run automatically, so additional `/run/beamOn 1` commands display further events. Camera controls and GPS commands can be changed interactively. This mode uses the cosmic GPS generator; the production cosmic and file-driven beam workflows remain unchanged.
+
+The selected Geant4 installation must have an OpenGL visualization driver. Headless batch installations can still be built with `-DGRENDEL_WITH_UIVIS=OFF`, but zero-argument interactive mode is unavailable in that build.
+
 ## Cosmic-muon workflow
 
 Entry point: `run_cosmic.sh`. It builds the project and runs 10 events from `macros/cosmic_muon.mac`:
@@ -72,7 +94,7 @@ Schema version 4 represents entry and exit boundaries as complete independent re
 
 - `grendelSim.cc`: executable entry point and workflow selection
 - `include/`, `src/`: GRENDEL geometry, physics, generators, actions, detector response, and standalone ROOT output writer
-- `macros/`: the two supported Geant4 run macros
+- `macros/`: cosmic, beam, and interactive visualization macros
 - `inputData/config/`: active detector, scintillator, PMT, and beam-generator configuration
 - `inputData/muon_hit_4_vecs_large.txt`: retained beam-muon input
 - `OpticalData/`: optical spectra and PMT efficiency tables used by detector construction
