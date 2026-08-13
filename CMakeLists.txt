@@ -69,3 +69,4 @@ target_link_libraries(grendelSim PRIVATE ${Geant4_LIBRARIES}
   ${ROOT_LIBRARIES} ${ROOT_COMPONENT_LIBRARIES})
 set_target_properties(grendelSim PROPERTIES BUILD_RPATH "$ORIGIN")
 file(COPY inputData/config DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY macros/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
