@@ -411,14 +411,6 @@ void grSteppingAction::UserSteppingAction(const G4Step * theStep){
 
         scintSD = (grScintSD*)G4SDManager::GetSDMpointer()->FindSensitiveDetector(sdScintName);
 
-      // Order matters for adjacent scintillator volumes: finish the hit
-      // in the pre-step detector piece before starting the hit in the
-      // post-step detector piece.
-      if(startIsScint){
-        //G4cout << "exiting scint! copy number is " << preCopyNo << G4endl;
-        scintSD->ProcessHitsExit(theStep,NULL);
-      }
-
       if(endIsScint){
         scintSD->ProcessHitsEnter(theStep,NULL);
       }

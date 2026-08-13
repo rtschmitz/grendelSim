@@ -58,15 +58,17 @@ Beam particle type, event offset, rescaling, and four-vector path are configured
 
 ## Output
 
-Both workflows write a seed-tagged `Sim_<id>grendelSim.root` file in the build directory by default; `/run/fname` replaces that prefix. The `Events` tree uses standalone schema version 2 with one row per simulated event. No GRENDEL headers, shared library, ROOT dictionary, PCM, or rootmap is needed to read it.
+Both workflows write a seed-tagged `Sim_<id>grendelSim.root` file in the build directory by default; `/run/fname` replaces that prefix. Schema version 3 is standalone and contains three ordinary ROOT TTrees with scalar branches. No GRENDEL headers, shared library, dictionary, PCM, rootmap, or custom decoding is required. The trees can be read directly with ROOT, RDataFrame, or uproot.
 
-The event record contains only `schemaVersion`, `runID`, `eventID`, `processID`, `eventWeight`, and `kaonCavern`. Selected particle collections use the prefixes `muon_`, `gamma_`, `neutron_`, `electron_`, and `kaon_`. Each stores PDG, track, and parent IDs, initial and final copy numbers, times, kinetic energies, positions where available, total track length, processes, and volume names. Elements at the same vector index describe the same track. Which particle species are collected is controlled in `grTrackingAction`.
+- `Events` has one row per event: schema and run identifiers, process ID, event weight, `kaonCavern`, and the numbers of selected tracks and sensitive-volume entries.
+- `Tracks` has one row per explicitly selected particle track. `pdgID` identifies the species, replacing separate mostly empty per-species branch groups. It stores track and parent IDs, initial and final copy numbers, times, kinetic energies, positions, total track length, processes, and volumes. Electron final positions are `NaN` because the tracking action does not collect them.
+- `Hits` has one row each time a particle enters a sensitive volume. It stores run/event, track/parent, PDG and copy identifiers; incoming kinetic energy, global time, position, unit direction vector, creator process, and origin volume. Entry direction is included so the boundary phase space can be propagated into alternate downstream detector models.
 
-The `scint_` collection is the reusable detector-interface record. Each crossing stores track ID, parent ID, PDG ID, sensitive-volume copy number, deposited energy, entry and exit times and positions, entry process, and origin volume. The name is retained for compatibility, but these are sensitive-detector-volume crossings used for downstream geometry and detector-response studies.
+Branch names carry units: energies are MeV, positions are metres, hit times are ns, and selected-track times are seconds. Floating-point values use standard ROOT `Float_t` branches. At a 100 m coordinate magnitude their precision is about 0.001 cm, comfortably finer than the required 0.1 cm resolution. IDs remain ordinary 32-bit integers. LZ4 level 4 and large autoflush clusters favor simulation throughput.
 
-Branch names carry units: energy is MeV, positions are metres, sensitive-volume hit times are ns, and selected-track times are seconds. The writer uses LZ4 level 4 compression and 50 MiB autoflush clusters to minimize production CPU.
+Schema version 3 eliminates the duplicate exit record for every sensitive-volume crossing and the invalid `scint_energyDeposit_MeV` value previously formed by subtracting two independent records. `Hits.kineticEnergy_MeV` now states the actual stored quantity. Exit coordinates, exit time, and exit energy are intentionally omitted because entry phase space is the reusable detector interface. The schema also removes vector-container overhead and converts output doubles to floats; simulation calculations remain double precision.
 
-Schema version 2 removes all optical-photon, PMT, crystal, detector-trigger, aggregate energy-deposit, and detector-category branches. It also removes specialized track quantities such as accumulated deposits, interaction counters, momentum duplicates, cavern crossing coordinates, and optical-photon tracks. Optical transport physics and PMT geometry are not changed by this output cleanup.
+Optical-photon, PMT, crystal, detector-trigger, aggregate energy-deposit, detector-category, and specialized track branches remain excluded. Optical transport physics and PMT geometry are not changed by this output cleanup.
 
 ## Layout
 
