@@ -6,7 +6,9 @@
 class TFile;
 class TTree;
 class grUserEventInformation;
-struct grOutputBuffer;
+struct grEventOutput;
+struct grTrackOutput;
+struct grHitOutput;
 
 class grHistoManager {
 public:
@@ -18,7 +20,11 @@ public:
 private:
   TFile* rootFile;
   TTree* eventTree;
-  grOutputBuffer* output;
+  TTree* trackTree;
+  TTree* hitTree;
+  grEventOutput* eventOutput;
+  grTrackOutput* trackOutput;
+  grHitOutput* hitOutput;
 };
 
 #endif

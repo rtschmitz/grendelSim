@@ -6,148 +6,200 @@
 #include "TFile.h"
 #include "TTree.h"
 
+#include <limits>
 #include <string>
-#include <vector>
 
-#define TRACK_FIELDS(X, P) \
-  X(P, trackID, Int_t) X(P, pdgID, Int_t) X(P, parentID, Int_t) X(P, initialCopyNo, Int_t) X(P, finalCopyNo, Int_t) \
-  X(P, initialTime_s, Double_t) X(P, finalTime_s, Double_t) X(P, initialEnergy_MeV, Double_t) X(P, finalEnergy_MeV, Double_t) \
-  X(P, initialX_m, Double_t) X(P, initialY_m, Double_t) X(P, initialZ_m, Double_t) \
-  X(P, finalX_m, Double_t) X(P, finalY_m, Double_t) X(P, finalZ_m, Double_t) X(P, trackLength_m, Double_t) \
-  X(P, initialProcess, std::string) X(P, finalProcess, std::string) X(P, initialVolume, std::string) X(P, finalVolume, std::string)
-#define ELECTRON_FIELDS(X, P) \
-  X(P, trackID, Int_t) X(P, pdgID, Int_t) X(P, parentID, Int_t) X(P, initialCopyNo, Int_t) X(P, finalCopyNo, Int_t) \
-  X(P, initialTime_s, Double_t) X(P, finalTime_s, Double_t) X(P, initialEnergy_MeV, Double_t) X(P, finalEnergy_MeV, Double_t) \
-  X(P, initialX_m, Double_t) X(P, initialY_m, Double_t) X(P, initialZ_m, Double_t) X(P, trackLength_m, Double_t) \
-  X(P, initialProcess, std::string) X(P, finalProcess, std::string) X(P, initialVolume, std::string) X(P, finalVolume, std::string)
-#define DECLARE_VECTOR(P, N, T) std::vector<T> P##_##N;
-#define CLEAR_VECTOR(P, N, T) P##_##N.clear();
-#define BRANCH_VECTOR(P, N, T) tree->Branch(#P "_" #N, &P##_##N);
-
-struct grOutputBuffer {
-  Int_t schemaVersion, runID, eventID, processID;
-  Double_t eventWeight;
+struct grEventOutput {
+  Int_t schemaVersion, runID, eventID, processID, trackCount, hitCount;
+  Float_t eventWeight;
   Bool_t kaonCavern;
 
-  TRACK_FIELDS(DECLARE_VECTOR, muon)
-  TRACK_FIELDS(DECLARE_VECTOR, gamma)
-  TRACK_FIELDS(DECLARE_VECTOR, neutron)
-  ELECTRON_FIELDS(DECLARE_VECTOR, electron)
-  TRACK_FIELDS(DECLARE_VECTOR, kaon)
-
-  std::vector<Int_t> scint_trackID, scint_parentID, scint_copyNo, scint_pdgID;
-  std::vector<Double_t> scint_energyDeposit_MeV, scint_entryTime_ns, scint_exitTime_ns;
-  std::vector<Double_t> scint_entryX_m, scint_entryY_m, scint_entryZ_m;
-  std::vector<Double_t> scint_exitX_m, scint_exitY_m, scint_exitZ_m;
-  std::vector<std::string> scint_entryProcess, scint_originVolume;
-
-  void branch(TTree* tree);
-  void clear();
+  void branch(TTree* tree) {
+    tree->Branch("schemaVersion", &schemaVersion);
+    tree->Branch("runID", &runID);
+    tree->Branch("eventID", &eventID);
+    tree->Branch("processID", &processID);
+    tree->Branch("eventWeight", &eventWeight);
+    tree->Branch("kaonCavern", &kaonCavern);
+    tree->Branch("trackCount", &trackCount);
+    tree->Branch("hitCount", &hitCount);
+  }
 };
 
-#define BRANCH(N) tree->Branch(#N, &N)
-void grOutputBuffer::branch(TTree* tree) {
-  BRANCH(schemaVersion); BRANCH(runID); BRANCH(eventID); BRANCH(processID);
-  BRANCH(eventWeight); BRANCH(kaonCavern);
-  TRACK_FIELDS(BRANCH_VECTOR, muon)
-  TRACK_FIELDS(BRANCH_VECTOR, gamma)
-  TRACK_FIELDS(BRANCH_VECTOR, neutron)
-  ELECTRON_FIELDS(BRANCH_VECTOR, electron)
-  TRACK_FIELDS(BRANCH_VECTOR, kaon)
-#define B(N) BRANCH(N);
-  B(scint_trackID) B(scint_parentID) B(scint_copyNo) B(scint_pdgID)
-  B(scint_energyDeposit_MeV) B(scint_entryTime_ns) B(scint_exitTime_ns)
-  B(scint_entryX_m) B(scint_entryY_m) B(scint_entryZ_m)
-  B(scint_exitX_m) B(scint_exitY_m) B(scint_exitZ_m)
-  B(scint_entryProcess) B(scint_originVolume)
-#undef B
-}
+struct grTrackOutput {
+  Int_t runID, eventID, trackID, pdgID, parentID, initialCopyNo, finalCopyNo;
+  Float_t initialTime_s, finalTime_s, initialEnergy_MeV, finalEnergy_MeV;
+  Float_t initialX_m, initialY_m, initialZ_m;
+  Float_t finalX_m, finalY_m, finalZ_m, trackLength_m;
+  std::string initialProcess, finalProcess, initialVolume, finalVolume;
 
-void grOutputBuffer::clear() {
-  TRACK_FIELDS(CLEAR_VECTOR, muon)
-  TRACK_FIELDS(CLEAR_VECTOR, gamma)
-  TRACK_FIELDS(CLEAR_VECTOR, neutron)
-  ELECTRON_FIELDS(CLEAR_VECTOR, electron)
-  TRACK_FIELDS(CLEAR_VECTOR, kaon)
-#define C(N) N.clear();
-  C(scint_trackID) C(scint_parentID) C(scint_copyNo) C(scint_pdgID)
-  C(scint_energyDeposit_MeV) C(scint_entryTime_ns) C(scint_exitTime_ns)
-  C(scint_entryX_m) C(scint_entryY_m) C(scint_entryZ_m)
-  C(scint_exitX_m) C(scint_exitY_m) C(scint_exitZ_m)
-  C(scint_entryProcess) C(scint_originVolume)
-#undef C
-}
+  void branch(TTree* tree) {
+#define B(N) tree->Branch(#N, &N)
+    B(runID); B(eventID); B(trackID); B(pdgID); B(parentID);
+    B(initialCopyNo); B(finalCopyNo); B(initialTime_s); B(finalTime_s);
+    B(initialEnergy_MeV); B(finalEnergy_MeV);
+    B(initialX_m); B(initialY_m); B(initialZ_m);
+    B(finalX_m); B(finalY_m); B(finalZ_m); B(trackLength_m);
+    B(initialProcess); B(finalProcess); B(initialVolume); B(finalVolume);
+#undef B
+  }
+};
+
+struct grHitOutput {
+  Int_t runID, eventID, trackID, parentID, copyNo, pdgID;
+  Float_t kineticEnergy_MeV, time_ns, x_m, y_m, z_m;
+  Float_t directionX, directionY, directionZ;
+  std::string creatorProcess, originVolume;
+
+  void branch(TTree* tree) {
+#define B(N) tree->Branch(#N, &N)
+    B(runID); B(eventID); B(trackID); B(parentID); B(copyNo); B(pdgID);
+    B(kineticEnergy_MeV); B(time_ns); B(x_m); B(y_m); B(z_m);
+    B(directionX); B(directionY); B(directionZ);
+    B(creatorProcess); B(originVolume);
+#undef B
+  }
+};
 
 namespace {
 std::string text(const TString& value) { return value.Data(); }
-#define FILL_TRACK(O, T, P) \
-  O.P##_trackID.push_back(T->GetTrackID()); O.P##_pdgID.push_back(T->GetPDGID()); O.P##_parentID.push_back(T->GetParentID()); \
-  O.P##_initialCopyNo.push_back(T->GetFirstCopyNo()); O.P##_finalCopyNo.push_back(T->GetLastCopyNo()); \
-  O.P##_initialTime_s.push_back(T->GetTimeOfFirstProcess()); O.P##_finalTime_s.push_back(T->GetTimeOfLastProcess()); \
-  O.P##_initialEnergy_MeV.push_back(T->GetInitialEnergy()); O.P##_finalEnergy_MeV.push_back(T->GetFinalEnergy()); \
-  O.P##_initialX_m.push_back(T->GetFirstPositionX()); O.P##_initialY_m.push_back(T->GetFirstPositionY()); O.P##_initialZ_m.push_back(T->GetFirstPositionZ()); \
-  O.P##_finalX_m.push_back(T->GetLastPositionX()); O.P##_finalY_m.push_back(T->GetLastPositionY()); O.P##_finalZ_m.push_back(T->GetLastPositionZ()); \
-  O.P##_trackLength_m.push_back(T->GetTotalTrackLength()); \
-  O.P##_initialProcess.push_back(text(T->GetFirstProcessName())); O.P##_finalProcess.push_back(text(T->GetLastProcessName())); \
-  O.P##_initialVolume.push_back(text(T->GetFirstVolume())); O.P##_finalVolume.push_back(text(T->GetLastVolume()));
+
+template<class Track>
+void fillTrack(grTrackOutput& o, const Track* t, Int_t runID, Int_t eventID,
+               bool timeStoredInNanoseconds = false) {
+  o.runID = runID; o.eventID = eventID;
+  o.trackID = t->GetTrackID(); o.pdgID = t->GetPDGID(); o.parentID = t->GetParentID();
+  o.initialCopyNo = t->GetFirstCopyNo(); o.finalCopyNo = t->GetLastCopyNo();
+  const double timeScale = timeStoredInNanoseconds ? ns/s : 1.;
+  o.initialTime_s = static_cast<Float_t>(t->GetTimeOfFirstProcess() * timeScale);
+  o.finalTime_s = static_cast<Float_t>(t->GetTimeOfLastProcess() * timeScale);
+  o.initialEnergy_MeV = static_cast<Float_t>(t->GetInitialEnergy());
+  o.finalEnergy_MeV = static_cast<Float_t>(t->GetFinalEnergy());
+  o.initialX_m = static_cast<Float_t>(t->GetFirstPositionX());
+  o.initialY_m = static_cast<Float_t>(t->GetFirstPositionY());
+  o.initialZ_m = static_cast<Float_t>(t->GetFirstPositionZ());
+  o.finalX_m = static_cast<Float_t>(t->GetLastPositionX());
+  o.finalY_m = static_cast<Float_t>(t->GetLastPositionY());
+  o.finalZ_m = static_cast<Float_t>(t->GetLastPositionZ());
+  o.trackLength_m = static_cast<Float_t>(t->GetTotalTrackLength());
+  o.initialProcess = text(t->GetFirstProcessName()); o.finalProcess = text(t->GetLastProcessName());
+  o.initialVolume = text(t->GetFirstVolume()); o.finalVolume = text(t->GetLastVolume());
 }
 
-grHistoManager::grHistoManager() : rootFile(0), eventTree(0), output(new grOutputBuffer()) {}
-grHistoManager::~grHistoManager() { delete rootFile; delete output; }
+void fillTrack(grTrackOutput& o, const grElectronTrack* t, Int_t runID, Int_t eventID) {
+  o.runID = runID; o.eventID = eventID;
+  o.trackID = t->GetTrackID(); o.pdgID = t->GetPDGID(); o.parentID = t->GetParentID();
+  o.initialCopyNo = t->GetFirstCopyNo(); o.finalCopyNo = t->GetLastCopyNo();
+  o.initialTime_s = static_cast<Float_t>(t->GetTimeOfFirstProcess());
+  o.finalTime_s = static_cast<Float_t>(t->GetTimeOfLastProcess());
+  o.initialEnergy_MeV = static_cast<Float_t>(t->GetInitialEnergy());
+  o.finalEnergy_MeV = static_cast<Float_t>(t->GetFinalEnergy());
+  o.initialX_m = static_cast<Float_t>(t->GetFirstPositionX());
+  o.initialY_m = static_cast<Float_t>(t->GetFirstPositionY());
+  o.initialZ_m = static_cast<Float_t>(t->GetFirstPositionZ());
+  o.finalX_m = o.finalY_m = o.finalZ_m = std::numeric_limits<Float_t>::quiet_NaN();
+  o.trackLength_m = static_cast<Float_t>(t->GetTotalTrackLength());
+  o.initialProcess = text(t->GetFirstProcessName()); o.finalProcess = text(t->GetLastProcessName());
+  o.initialVolume = text(t->GetFirstVolume()); o.finalVolume = text(t->GetLastVolume());
+}
+
+template<class Sequence>
+void writeTracks(TTree* tree, grTrackOutput& output, const Sequence& tracks,
+                 Int_t runID, Int_t eventID, bool timesInNanoseconds = false) {
+  for (typename Sequence::const_iterator it = tracks.begin(); it != tracks.end(); ++it) {
+    fillTrack(output, *it, runID, eventID, timesInNanoseconds);
+    tree->Fill();
+  }
+}
+
+void writeElectronTracks(TTree* tree, grTrackOutput& output,
+                         const grElectronTrackVector& tracks, Int_t runID, Int_t eventID) {
+  for (grElectronTrackVector::const_iterator it = tracks.begin(); it != tracks.end(); ++it) {
+    fillTrack(output, *it, runID, eventID);
+    tree->Fill();
+  }
+}
+}
+
+grHistoManager::grHistoManager()
+  : rootFile(0), eventTree(0), trackTree(0), hitTree(0),
+    eventOutput(new grEventOutput()), trackOutput(new grTrackOutput()), hitOutput(new grHitOutput()) {}
+
+grHistoManager::~grHistoManager() {
+  delete rootFile;
+  delete eventOutput;
+  delete trackOutput;
+  delete hitOutput;
+}
 
 void grHistoManager::book(G4String directory) {
   const G4String fileName = directory + "grendelSim.root";
-  G4cout << "GRENDEL> Create standalone ROOT file: " << fileName << G4endl;
-  rootFile = TFile::Open(fileName, "RECREATE", "GRENDEL standalone output", ROOT::CompressionSettings(ROOT::kLZ4, 4));
-  if (!rootFile || rootFile->IsZombie()) G4Exception("grHistoManager::book", "OutputOpenFailed", FatalException, fileName);
-  eventTree = new TTree("Events", "GRENDEL event, selected-track, and sensitive-volume hit data");
-  eventTree->SetAutoFlush(-50LL * 1024LL * 1024LL);
-  output->branch(eventTree);
+  G4cout << "GRENDEL> Create compact standalone ROOT file: " << fileName << G4endl;
+  rootFile = TFile::Open(fileName, "RECREATE", "GRENDEL standalone output",
+                         ROOT::CompressionSettings(ROOT::kLZ4, 4));
+  if (!rootFile || rootFile->IsZombie())
+    G4Exception("grHistoManager::book", "OutputOpenFailed", FatalException, fileName);
+
+  eventTree = new TTree("Events", "One row per simulated event");
+  trackTree = new TTree("Tracks", "One row per explicitly selected particle track");
+  hitTree = new TTree("Hits", "One row per sensitive-volume entry");
+  eventTree->SetAutoFlush(-16LL * 1024LL * 1024LL);
+  trackTree->SetAutoFlush(-16LL * 1024LL * 1024LL);
+  hitTree->SetAutoFlush(-32LL * 1024LL * 1024LL);
+  eventOutput->branch(eventTree);
+  trackOutput->branch(trackTree);
+  hitOutput->branch(hitTree);
 }
 
 void grHistoManager::save() {
   if (!rootFile) return;
-  rootFile->cd(); eventTree->Write(); rootFile->Close();
-  G4cout << "\n----> Standalone ROOT event tree is saved\n" << G4endl;
+  rootFile->cd();
+  eventTree->Write(); trackTree->Write(); hitTree->Write();
+  rootFile->Close();
+  G4cout << "\n----> Compact standalone ROOT trees are saved\n" << G4endl;
 }
 
 void grHistoManager::FillEventNtuple(grUserEventInformation& e) {
-  grOutputBuffer& o = *output;
-  o.clear();
-  o.schemaVersion = 2;
-  o.runID = e.GetRunID(); o.eventID = e.GetEventID(); o.processID = e.GetProcessID(); o.eventWeight = e.GetEventWeight();
-  o.kaonCavern = e.GetKaonCavern();
-
+  const Int_t runID = e.GetRunID(), eventID = e.GetEventID();
   const grMuonTrackVector& muons = *e.GetMuonTracks();
-  for (std::size_t i=0; i<muons.size(); ++i) { grMuonTrack* t=muons[i]; FILL_TRACK(o,t,muon) }
   const grGammaTrackVector& gammas = *e.GetGammaTracks();
-  for (std::size_t i=0; i<gammas.size(); ++i) { grGammaTrack* t=gammas[i]; FILL_TRACK(o,t,gamma) o.gamma_initialTime_s.back()*=ns/s; o.gamma_finalTime_s.back()*=ns/s; }
   const grNeutronTrackVector& neutrons = *e.GetNeutronTracks();
-  for (std::size_t i=0; i<neutrons.size(); ++i) { grNeutronTrack* t=neutrons[i]; FILL_TRACK(o,t,neutron) }
   const grElectronTrackVector& electrons = *e.GetElectronTracks();
-  for (std::size_t i=0; i<electrons.size(); ++i) { grElectronTrack* t=electrons[i];
-    o.electron_trackID.push_back(t->GetTrackID()); o.electron_pdgID.push_back(t->GetPDGID()); o.electron_parentID.push_back(t->GetParentID());
-    o.electron_initialCopyNo.push_back(t->GetFirstCopyNo()); o.electron_finalCopyNo.push_back(t->GetLastCopyNo());
-    o.electron_initialTime_s.push_back(t->GetTimeOfFirstProcess()); o.electron_finalTime_s.push_back(t->GetTimeOfLastProcess());
-    o.electron_initialEnergy_MeV.push_back(t->GetInitialEnergy()); o.electron_finalEnergy_MeV.push_back(t->GetFinalEnergy());
-    o.electron_initialX_m.push_back(t->GetFirstPositionX()); o.electron_initialY_m.push_back(t->GetFirstPositionY()); o.electron_initialZ_m.push_back(t->GetFirstPositionZ());
-    o.electron_trackLength_m.push_back(t->GetTotalTrackLength());
-    o.electron_initialProcess.push_back(text(t->GetFirstProcessName())); o.electron_finalProcess.push_back(text(t->GetLastProcessName()));
-    o.electron_initialVolume.push_back(text(t->GetFirstVolume())); o.electron_finalVolume.push_back(text(t->GetLastVolume()));
-  }
   const grMCPTrackVector& kaons = *e.GetMCPTracks();
-  for (std::size_t i=0; i<kaons.size(); ++i) { grMCPTrack* t=kaons[i]; FILL_TRACK(o,t,kaon) }
-
   const grScintHitVector& hits = *e.GetScintHits();
-  for (std::size_t i=0; i<hits.size(); ++i) {
-    grScintHit* h=hits[i]; const G4ThreeVector p=h->GetHitPosition(), q=h->GetExitPosition();
-    o.scint_trackID.push_back(h->GetTrackID()); o.scint_parentID.push_back(h->GetParentID());
-    o.scint_copyNo.push_back(h->GetCopyNo()); o.scint_pdgID.push_back(h->GetParticleName());
-    o.scint_energyDeposit_MeV.push_back((h->GetHitEnergy()-h->GetExitEnergy())/MeV);
-    o.scint_entryTime_ns.push_back(h->GetHitTime()/ns); o.scint_exitTime_ns.push_back(h->GetExitTime()/ns);
-    o.scint_entryX_m.push_back(p.x()/m); o.scint_entryY_m.push_back(p.y()/m); o.scint_entryZ_m.push_back(p.z()/m);
-    o.scint_exitX_m.push_back(q.x()/m); o.scint_exitY_m.push_back(q.y()/m); o.scint_exitZ_m.push_back(q.z()/m);
-    o.scint_entryProcess.push_back(h->GetProcName()); o.scint_originVolume.push_back(h->GetCreatorVolName());
-  }
+
+  eventOutput->schemaVersion = 3;
+  eventOutput->runID = runID; eventOutput->eventID = eventID;
+  eventOutput->processID = e.GetProcessID();
+  eventOutput->eventWeight = static_cast<Float_t>(e.GetEventWeight());
+  eventOutput->kaonCavern = e.GetKaonCavern();
+  eventOutput->trackCount = muons.size() + gammas.size() + neutrons.size() + electrons.size() + kaons.size();
+  eventOutput->hitCount = hits.size();
   eventTree->Fill();
+
+  writeTracks(trackTree, *trackOutput, muons, runID, eventID);
+  writeTracks(trackTree, *trackOutput, gammas, runID, eventID, true);
+  writeTracks(trackTree, *trackOutput, neutrons, runID, eventID);
+  writeElectronTracks(trackTree, *trackOutput, electrons, runID, eventID);
+  writeTracks(trackTree, *trackOutput, kaons, runID, eventID);
+
+  for (grScintHitVector::const_iterator it = hits.begin(); it != hits.end(); ++it) {
+    const grScintHit* h = *it;
+    const G4ThreeVector position = h->GetHitPosition();
+    const G4ThreeVector direction = h->GetDirection();
+    hitOutput->runID = runID; hitOutput->eventID = eventID;
+    hitOutput->trackID = h->GetTrackID(); hitOutput->parentID = h->GetParentID();
+    hitOutput->copyNo = h->GetCopyNo(); hitOutput->pdgID = h->GetParticleName();
+    hitOutput->kineticEnergy_MeV = static_cast<Float_t>(h->GetKineticEnergy()/MeV);
+    hitOutput->time_ns = static_cast<Float_t>(h->GetHitTime()/ns);
+    hitOutput->x_m = static_cast<Float_t>(position.x()/m);
+    hitOutput->y_m = static_cast<Float_t>(position.y()/m);
+    hitOutput->z_m = static_cast<Float_t>(position.z()/m);
+    hitOutput->directionX = static_cast<Float_t>(direction.x());
+    hitOutput->directionY = static_cast<Float_t>(direction.y());
+    hitOutput->directionZ = static_cast<Float_t>(direction.z());
+    hitOutput->creatorProcess = h->GetProcName();
+    hitOutput->originVolume = h->GetCreatorVolName();
+    hitTree->Fill();
+  }
 }
