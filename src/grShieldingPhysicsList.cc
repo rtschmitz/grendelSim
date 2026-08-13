@@ -110,12 +110,6 @@ grShieldingList::grShieldingList( G4int verbose, G4String LEN_model, const boost
   RegisterPhysics( MonopolePhys );
 
   // EM Physics
-  RegisterPhysics( new grEMPhysics("standard EM"));
-
-  // Muon Physics
-  RegisterPhysics( new grMuonPhysics("muon"));
-
-  // EM Physics
   this->RegisterPhysics( new G4EmStandardPhysics_option4(verbose));
   //G4EmProcessOptions emOptions;
   //emOptions.SetFluo(true); // To activate deexcitation processes and fluorescence
@@ -193,7 +187,7 @@ grShieldingList::grShieldingList( G4int verbose, G4String LEN_model, const boost
 
   // G.H.
   //optical physics added manually to shielding list, comment/uncomment to turn on/off photon tracks
-///*
+/*
   G4OpticalPhysics* opticalPhysics = new G4OpticalPhysics();
   auto opticalParams = G4OpticalParameters::Instance();
 
@@ -212,7 +206,7 @@ grShieldingList::grShieldingList( G4int verbose, G4String LEN_model, const boost
 
 
    this->RegisterPhysics( opticalPhysics );
-//*/
+*/
 
 //calculator for various physics values
 G4EmCalculator emCalc;
