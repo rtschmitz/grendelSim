@@ -11,6 +11,8 @@
 
 Geant4 10 is not supported by this branch. Configure the shell environment for the Geant4 11 and ROOT installations before running CMake. Visualization support is enabled by default; pass `-DGRENDEL_WITH_UIVIS=OFF` for batch-only installations.
 
+When `ROOTSYS` is set and `$ROOTSYS/cmake/ROOTConfig.cmake` exists, the build uses that ROOT installation in preference to a system ROOT package. This keeps ROOT and the active Geant4 compiler environment consistent. You can select ROOT explicitly with `-DROOT_DIR=/path/to/root/cmake` when configuring manually.
+
 ## Build
 
 From a clean checkout:
