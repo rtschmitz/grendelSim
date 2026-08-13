@@ -29,9 +29,9 @@ public:
   G4int GetNLayer()const{return fNLayer;}
   void UpdateGeometry();
   G4bool GetUpdated(){return updated;}
-  void GetPMTEff_R878(G4PhysicsVector& effVec);
-  void GetPMTEff_R7725(G4PhysicsVector& effVec);
-  void GetPMTEff_ET9814B(G4PhysicsVector& effVec);
+  G4PhysicsVector GetPMTEff_R878();
+  G4PhysicsVector GetPMTEff_R7725();
+  G4PhysicsVector GetPMTEff_ET9814B();
         void SetMagField(G4double, G4double, G4double);
   void SetDefaults();
 

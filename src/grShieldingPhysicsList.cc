@@ -74,7 +74,7 @@
 #include "G4DecayPhysics.hh"
 #include "G4RadioactiveDecayPhysics.hh"
 //#include "G4EmProcessOptions.hh"  OLD G4.9
-#include "G4EmParameters.hh"
+#include "G4EmProcessOptions.hh"
 #include "G4EmStandardPhysics_option4.hh"
 #include "G4EmExtraPhysics.hh"
 #include "G4IonQMDPhysics.hh"
@@ -91,7 +91,6 @@
 #include "G4HadronPhysicsShielding.hh"
 
 #include "G4OpticalPhysics.hh"
-#include "G4OpticalParameters.hh"  //New to G4p11
 //#include "G4OpticalProcessIndex.hh"
 
 
@@ -197,10 +196,9 @@ grShieldingList::grShieldingList( G4int verbose, G4String LEN_model, const boost
   //optical physics added manually to shielding list, comment/uncomment to turn on/off photon tracks
 ///*
   G4OpticalPhysics* opticalPhysics = new G4OpticalPhysics();
-  auto opticalParams = G4OpticalParameters::Instance();
 
 
-   //opticalPhysics->SetScintillationYieldFactor(1.0);  OLD
+   opticalPhysics->SetScintillationYieldFactor(1.0);
    //opticalParams->SetScintillationYieldFactor(1.0);
    //opticalPhysics->SetScintillationExcitationRatio(0.0);
 
@@ -208,9 +206,9 @@ grShieldingList::grShieldingList( G4int verbose, G4String LEN_model, const boost
    //opticalPhysics->SetMaxBetaChangePerStep(10.0);
 
    //opticalPhysics->SetTrackSecondariesFirst(kCerenkov,false); OLD
-   opticalParams->SetCerenkovTrackSecondariesFirst(false);
+   opticalPhysics->SetTrackSecondariesFirst(kCerenkov,false);
    //opticalPhysics->SetTrackSecondariesFirst(kScintillation,false); OLD
-   opticalParams->SetScintTrackSecondariesFirst(false);
+   opticalPhysics->SetTrackSecondariesFirst(kScintillation,false);
 
 
    this->RegisterPhysics( opticalPhysics );

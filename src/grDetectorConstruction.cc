@@ -705,18 +705,6 @@ void grDetectorConstruction::SetMagField(G4double fieldValueX, G4double fieldVal
 
 }
 
-void SortProperty(G4double* energies, G4double* values, int n) {
-    std::vector<std::pair<G4double,G4double>> pairs;
-    for(int i=0; i<n; i++) pairs.emplace_back(energies[i], values[i]);
-    std::sort(pairs.begin(), pairs.end(),
-              [](auto &a, auto &b){ return a.first < b.first; });
-    for(int i=0; i<n; i++) {
-        energies[i] = pairs[i].first;
-        values[i]   = pairs[i].second;
-    }
-}
-
-
 G4MaterialPropertiesTable* grDetectorConstruction::SetOpticalPropertiesOfPS(){
 
 
@@ -750,7 +738,6 @@ G4MaterialPropertiesTable* mptPlScin = new G4MaterialPropertiesTable();
   else
   G4cout << "Error opening file: " << "EJ200ScintSpectrum.txt" << G4endl;
   ReadEJ200.close();
-  SortProperty(photonEnergy, EJ200_SCINT, ScintEntry);
 
   for (int i = 0; i < nEntries; i++) {
     EJ200_RIND[i] = 1.58;//58; // refractive index at 425 nm
@@ -759,8 +746,8 @@ G4MaterialPropertiesTable* mptPlScin = new G4MaterialPropertiesTable();
   }
 
 
-  mptPlScin->AddProperty("SCINTILLATIONCOMPONENT1", photonEnergy, EJ200_SCINT, ScintEntry);
-        mptPlScin->AddConstProperty("SCINTILLATIONTIMECONSTANT1", 2.1 * ns); //decay time, according to EJ200
+  mptPlScin->AddProperty("FASTCOMPONENT", photonEnergy, EJ200_SCINT, nEntries);
+        mptPlScin->AddConstProperty("FASTTIMECONSTANT", 2.1 * ns); //decay time, according to EJ200
 
   mptPlScin->AddProperty("ABSLENGTH", photonEnergy, EJ200_ABSL,
         nEntries);//->SetSpline(true);
@@ -805,7 +792,6 @@ G4MaterialPropertiesTable* grDetectorConstruction::SetOpticalPropertiesOfPMT(){
   else
   G4cout << "Error opening file: " << "PMT_R878_QE.txt" << G4endl;
   ReadPMTQEff.close();
-        SortProperty(photonEnergyPMT, photocath_EFF, nEntriesPMT);
 
 
   mptPMT->AddProperty("REFLECTIVITY", photonEnergyPMT,PhCath_REFL, nEntriesPMT);//->SetSpline(true);
@@ -817,66 +803,40 @@ G4MaterialPropertiesTable* grDetectorConstruction::SetOpticalPropertiesOfPMT(){
 
 }
 
-void grDetectorConstruction::GetPMTEff_R878(G4PhysicsVector& effVec)
-{
-    std::ifstream ReadPMTQEff(grOpticalFilePath + "PMT_R878_QE.txt");
-
-    if (!ReadPMTQEff.is_open()) {
-        G4cerr << "ERROR: Could not open PMT_R878_QE.txt at "
-               << grOpticalFilePath << G4endl;
-        return;
-    }
-
-    effVec.Retrieve(ReadPMTQEff, true);
-
-    if (effVec.GetVectorLength() != 0)
-        G4cout << "Quantum Efficiency successfully retrieved for PMT_R878_QE" << G4endl;
-    else
-        G4cout << "ERROR: Vector length is zero!" << G4endl;
-
-    effVec.ScaleVector(1, 1);
+G4PhysicsVector grDetectorConstruction::GetPMTEff_R878(){
+  std::ifstream ReadPMTQEff;
+  ReadPMTQEff.open(grOpticalFilePath+"PMT_R878_QE.txt");
+  G4PhysicsVector effVec;
+  effVec.Retrieve(ReadPMTQEff,true);
+  if (effVec.GetVectorLength()!=0) G4cout << "Quantum Efficiency successfully retrieved for PMT_R878_QE" << G4endl;
+  else G4cout << "ERROR: Vector length is zero!" << G4endl;
+  effVec.ScaleVector(1,1);
+  ReadPMTQEff.close();
+  return effVec;
 }
 
-
-void grDetectorConstruction::GetPMTEff_R7725(G4PhysicsVector& effVec)
-{
-    std::ifstream ReadPMTQEff(grOpticalFilePath + "PMT_R7725_QE.txt");
-
-    if (!ReadPMTQEff.is_open()) {
-        G4cerr << "ERROR: Could not open PMT_R7725_QE.txt at "
-               << grOpticalFilePath << G4endl;
-        return;
-    }
-
-    effVec.Retrieve(ReadPMTQEff, true);
-
-    if (effVec.GetVectorLength() != 0)
-        G4cout << "Quantum Efficiency successfully retrieved for PMT R7725" << G4endl;
-    else
-        G4cout << "ERROR: Vector length is zero!" << G4endl;
-
-    effVec.ScaleVector(1, 1);
+G4PhysicsVector grDetectorConstruction::GetPMTEff_R7725(){
+  std::ifstream ReadPMTQEff;
+  ReadPMTQEff.open(grOpticalFilePath+"PMT_R7725_QE.txt");
+  G4PhysicsVector effVec;
+  effVec.Retrieve(ReadPMTQEff,true);
+  if (effVec.GetVectorLength()!=0) G4cout << "Quantum Efficiency successfully retrieved for PMT R7725" << G4endl;
+  else G4cout << "ERROR: Vector length is zero!" << G4endl;
+  effVec.ScaleVector(1,1);
+  ReadPMTQEff.close();
+  return effVec;
 }
 
-
-void grDetectorConstruction::GetPMTEff_ET9814B(G4PhysicsVector& effVec)
-{
-    std::ifstream ReadPMTQEff(grOpticalFilePath + "PMT_ET9814B_QE.txt");
-
-    if (!ReadPMTQEff.is_open()) {
-        G4cerr << "ERROR: Could not open PMT_ET9814B_QE.txt at "
-               << grOpticalFilePath << G4endl;
-        return;
-    }
-
-    effVec.Retrieve(ReadPMTQEff, true);
-
-    if (effVec.GetVectorLength() != 0)
-        G4cout << "Quantum Efficiency successfully retrieved for PMT ET9814B" << G4endl;
-    else
-        G4cout << "ERROR: Vector length is zero!" << G4endl;
-
-    effVec.ScaleVector(1, 1);
+G4PhysicsVector grDetectorConstruction::GetPMTEff_ET9814B(){
+  std::ifstream ReadPMTQEff;
+  ReadPMTQEff.open(grOpticalFilePath+"PMT_ET9814B_QE.txt");
+  G4PhysicsVector effVec;
+  effVec.Retrieve(ReadPMTQEff,true);
+  if (effVec.GetVectorLength()!=0) G4cout << "Quantum Efficiency successfully retrieved for PMT ET9814B" << G4endl;
+  else G4cout << "ERROR: Vector length is zero!" << G4endl;
+  effVec.ScaleVector(1,1);
+  ReadPMTQEff.close();
+  return effVec;
 }
 
 void grDetectorConstruction::UpdateGeometry() {

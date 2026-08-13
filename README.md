@@ -1,15 +1,15 @@
 # grendelSim
 
-`grendelSim` is the standalone Geant4 11 simulation for the GRENDEL detector. It retains two supported muon workflows: a propagated cosmic-muon spectrum generated with Geant4 GPS and a beam-muon workflow generated from an in-repository four-vector table.
+`grendelSim` is the standalone Geant4 10 simulation for the GRENDEL detector. It retains two supported muon workflows: a propagated cosmic-muon spectrum generated with Geant4 GPS and a beam-muon workflow generated from an in-repository four-vector table.
 
 ## Prerequisites
 
-- Geant4 11 with the high-precision data sets required by the `Shielding`-derived physics configuration
+- Geant4 10 with the high-precision data sets required by the `Shielding`-derived physics configuration
 - ROOT 6 with Cling and Physics components
 - Boost headers
-- CMake 3.16 or newer and a C++17 compiler
+- CMake 3.16 or newer and a C++11 compiler
 
-Geant4 10 is not supported by this branch. Configure the shell environment for the Geant4 11 and ROOT installations before running CMake. Visualization support is enabled by default; pass `-DGRENDEL_WITH_UIVIS=OFF` for batch-only installations.
+This compatibility branch targets Geant4 10; use `main` for Geant4 11. Configure the shell environment for the Geant4 10 and ROOT installations before running CMake. Visualization support is enabled by default; pass `-DGRENDEL_WITH_UIVIS=OFF` for batch-only installations.
 
 ## Build
 
@@ -73,6 +73,6 @@ The standalone rename changes the output file from `MilliQan.root` to `grendelSi
 
 ## Provenance
 
-This repository was extracted from `rtschmitz/milliQanSim`, branch `GRENDEL_G11`, pinned source commit `65b5e9d8b8b608408191706dce2b686c55b6be1e`. The standalone baseline is commit `077b38b545beac4684ed0c13f9e21a891d0182f5`; its intentionally new Git history means its SHA does not match the source commit.
+This repository was extracted from `rtschmitz/milliQanSim`, branch `GRENDEL_G11`, pinned source commit `65b5e9d8b8b608408191706dce2b686c55b6be1e`. The Geant4 10 compatibility changes are ported from the known-working `GRENDEL` branch at commit `2d4530324e92ef635c8cec052cc9c706bcfc74e8`. The standalone baseline is commit `077b38b545beac4684ed0c13f9e21a891d0182f5`; its intentionally new Git history means its SHA does not match the source commit.
 
 The source repository and its branches are provenance only and are not modified by this repository's workflow.

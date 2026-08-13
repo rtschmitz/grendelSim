@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+  echo "Run this script as ./run_cosmic.sh; do not source it." >&2
+  return 2
+fi
 set -euo pipefail
 repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 cmake -S "$repo_dir" -B "$repo_dir/build"
