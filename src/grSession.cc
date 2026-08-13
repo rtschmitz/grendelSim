@@ -47,4 +47,3 @@ void grSession::reinitFile() {
     //     G4cout << "   Turn Logfile '" << logFileName << "' off." << G4endl;
   }
 }
-

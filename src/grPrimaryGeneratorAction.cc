@@ -147,4 +147,3 @@ void grPrimaryGeneratorAction::SetSeeds(const unsigned long seed0,
     G4cout << " Seeds[" << i << "]: " << Seeds[i] << G4endl;
   }
 }
-

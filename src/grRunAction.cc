@@ -91,6 +91,3 @@ void grRunAction::EndOfRunAction(const G4Run* aRun) {
    G4cout << "<End run" << G4endl;
    //}
 }
-
-
-

@@ -67,5 +67,3 @@
 #pragma link C++ typedef grScintRHitVector;
 #pragma link C++ class grROOTEvent+;
 #endif
-
-

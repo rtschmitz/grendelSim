@@ -56,4 +56,3 @@ void grStackingAction::NewStage(){
 //_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
 void grStackingAction::PrepareNewEvent(){
 }
-

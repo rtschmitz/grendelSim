@@ -69,8 +69,3 @@ bool grPhotonTrack::compareHits(grPhotonTrack* const &a, grPhotonTrack* const &b
   Double_t bTime = b->GetTimeOfLastProcess();
   return (aTime < bTime);
 }
-
-
-
-
-

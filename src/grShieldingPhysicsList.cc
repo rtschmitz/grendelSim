@@ -265,8 +265,3 @@ void grShieldingList::SetCuts()
 //  if (this->verboseLevel > 0)
 //    G4VUserPhysicsList::DumpCutValuesTable();
 }
-
-
-
-
-

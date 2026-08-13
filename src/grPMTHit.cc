@@ -186,5 +186,3 @@ void grPMTHit::Print(){
        << G4endl;
 
 }
-
-

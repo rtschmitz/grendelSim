@@ -74,8 +74,3 @@ bool grMCPTrack::compareHits(grMCPTrack* const &a, grMCPTrack* const &b){
   Double_t bTime = b->GetTimeOfLastProcess();
   return (aTime < bTime);
 }
-
-
-
-
-

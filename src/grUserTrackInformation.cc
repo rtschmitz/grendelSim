@@ -28,4 +28,3 @@ void grUserTrackInformation::AddTrackStatusFlag(int s)
     status&=~active; //remove any flags indicating it is active
   status|=s; //add new flags
 }
-

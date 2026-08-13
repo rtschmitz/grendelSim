@@ -355,5 +355,3 @@ void grROOTEvent::AddScintRHit(grScintRHit *hit) {
 grScintRHitVector* grROOTEvent::GetScintRHits() {
   return &ScintRHits;
 }
-
-

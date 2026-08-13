@@ -1,4 +1,11 @@
-build/
-lib/
-condor/
-output_1.txt
+/build/
+/build-*/
+/cmake-build-*/
+/lib/
+/condor/
+*.root
+*.log
+*.out
+*.bak
+Sim*.root
+g4_*

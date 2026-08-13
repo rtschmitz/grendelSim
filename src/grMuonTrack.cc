@@ -107,8 +107,3 @@ bool grMuonTrack::compareHits(grMuonTrack* const &a, grMuonTrack* const &b){
   Double_t bTime = b->GetTimeOfLastProcess();
   return (aTime < bTime);
 }
-
-
-
-
-

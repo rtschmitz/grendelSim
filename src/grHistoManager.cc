@@ -101,10 +101,3 @@ void grHistoManager::FillEventNtuple(grROOTEvent* rootEvent)
 
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-
-
-
-
-
-

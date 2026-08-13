@@ -97,5 +97,3 @@ bool grPMTRHit::compareHits(grPMTRHit* const &a, grPMTRHit* const &b){
 //       << std::endl;
 //
 //}
-
-

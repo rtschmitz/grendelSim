@@ -294,7 +294,3 @@ in a file called run###evt###.rndm
   G4RunManager::GetRunManager()->SetRandomNumberStoreDir("random/");
   //  G4UImanager::GetUIpointer()->ApplyCommand("/random/setSavingFlag 1");
 }
-
-
-
-

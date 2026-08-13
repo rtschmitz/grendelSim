@@ -32,7 +32,3 @@ grSteppingMessenger::SetNewValue(G4UIcommand* command,G4String newValue){
           ->GetNewBoolValue(newValue));
   }
 }
-
-
-
-

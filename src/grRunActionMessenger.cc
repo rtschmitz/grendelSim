@@ -52,4 +52,3 @@ void grRunActionMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
 }
 
 // ------------------------------------------------
-

@@ -71,8 +71,3 @@ bool grGammaTrack::compareHits(grGammaTrack* const &a, grGammaTrack* const &b){
   Double_t bTime = b->GetTimeOfLastProcess();
   return (aTime < bTime);
 }
-
-
-
-
-

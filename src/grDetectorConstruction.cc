@@ -907,6 +907,3 @@ void grDetectorConstruction::SetDefaults(){
 
   updated=true;
 }
-
-
-

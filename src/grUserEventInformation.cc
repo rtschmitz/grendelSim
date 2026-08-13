@@ -378,6 +378,3 @@ grROOTEvent* grUserEventInformation::ConvertToROOTEvent(){
   return myROOTEvent;
 
 }
-
-
-

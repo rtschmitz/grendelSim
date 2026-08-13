@@ -562,6 +562,3 @@ void grTrackingAction::PostUserTrackingAction(const G4Track* aTrack){
 
 
 }
-
-
-

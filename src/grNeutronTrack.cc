@@ -74,8 +74,3 @@ bool grNeutronTrack::compareHits(grNeutronTrack* const &a, grNeutronTrack* const
   Double_t bTime = b->GetTimeOfLastProcess();
   return (aTime < bTime);
 }
-
-
-
-
-

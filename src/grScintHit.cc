@@ -149,5 +149,3 @@ grScintRHit* grScintHit::ConvertToROOTHit() const{
   return myROOTHit;
 
 }
-
-

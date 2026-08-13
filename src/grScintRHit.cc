@@ -87,7 +87,3 @@ Int_t grScintRHit::operator==(const grScintRHit& right) const
 
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-
-
-

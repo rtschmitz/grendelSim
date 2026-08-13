@@ -59,4 +59,3 @@ void grSessionMessenger::SetNewValue(G4UIcommand* command, G4String newValue) {
   G4cout << "leaving grSessionMessenger::SetNewValue" << G4endl;
 #endif
 }
-

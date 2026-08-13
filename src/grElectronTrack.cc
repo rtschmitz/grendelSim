@@ -78,8 +78,3 @@ bool grElectronTrack::compareHits(grElectronTrack* const &a, grElectronTrack* co
   Double_t bTime = b->GetTimeOfLastProcess();
   return (aTime < bTime);
 }
-
-
-
-
-

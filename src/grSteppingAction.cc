@@ -538,6 +538,3 @@ void grSteppingAction::UserSteppingAction(const G4Step * theStep){
 
 }
 }
-
-
-

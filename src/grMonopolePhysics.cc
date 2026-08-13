@@ -177,4 +177,3 @@ void grMonopolePhysics::SetMonopoleMass(G4double mass)
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
