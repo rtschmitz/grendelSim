@@ -5,9 +5,7 @@
  *      Author: Ryan Schmitz
  */
 #include "grMCPTrack.hh"
-#include "TObject.h"
 
-ClassImp(grMCPTrack)
 
 //==============================================================================
 

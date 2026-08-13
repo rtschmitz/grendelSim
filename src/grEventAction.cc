@@ -10,7 +10,6 @@
 #include "grScintHit.hh"
 #include "grUserEventInformation.hh"
 #include "grHistoManager.hh"
-#include "grROOTEvent.hh"
 
 #include "G4EventManager.hh"
 #include "G4SDManager.hh"
@@ -262,24 +261,9 @@ void grEventAction::EndOfEventAction(const G4Event* anEvent){
   if(saveThreshold&&eventInformation->GetPhotonCount_Scint() <= saveThreshold)
     G4RunManager::GetRunManager()->rndmSaveThisEvent();
 
-  //if(recorder)recorder->RecordEndOfEvent(anEvent);
-  //
+  // Fill the standalone output before Reset deletes the event-owned records.
+  histoManager->FillEventNtuple(*eventInformation);
 
-
-
-
-  //
-  //fill ntuple via HistoManager for chosen characteristics of the event
-  //
-    grROOTEvent* rootEvent = eventInformation->ConvertToROOTEvent();
-
-    rootEvent->Finalize();
-
-// if(eventInformation->GetPMTHits()->size()){
-    histoManager->FillEventNtuple(rootEvent);
-// }
- //   delete rootEvent;
-    rootEvent->Reset();
   eventInformation->Reset();
 }
 

@@ -5,9 +5,7 @@
  *      Author: schmitz
  */
 #include "grPhotonTrack.hh"
-#include "TObject.h"
 
-ClassImp(grPhotonTrack)
 
 //==============================================================================
 

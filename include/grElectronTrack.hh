@@ -10,14 +10,12 @@
 
 #include <iostream>
 #include <vector>
-#include "TObject.h"
 #include "TString.h"
 #include "TVector3.h"
 //==============================================================================
-class grElectronTrack: public TObject {
+class grElectronTrack {
 public:
   grElectronTrack();
-  ClassDef(grElectronTrack,9);
   ~grElectronTrack();
    const grElectronTrack& operator=(const grElectronTrack &right);
      Int_t operator==(const grElectronTrack&) const;

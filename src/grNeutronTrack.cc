@@ -5,9 +5,7 @@
  *      Author: schmitz
  */
 #include "grNeutronTrack.hh"
-#include "TObject.h"
 
-ClassImp(grNeutronTrack)
 
 //==============================================================================
 

@@ -5,9 +5,7 @@
  *      Author: Ryan Schmitz
  */
 #include "grMuonTrack.hh"
-#include "TObject.h"
 
-ClassImp(grMuonTrack)
 
 //==============================================================================
 

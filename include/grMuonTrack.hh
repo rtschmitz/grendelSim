@@ -10,14 +10,12 @@
 
 #include <iostream>
 #include <vector>
-#include "TObject.h"
 #include "TString.h"
 #include "TVector3.h"
 //==============================================================================
-class grMuonTrack: public TObject {
+class grMuonTrack {
 public:
   grMuonTrack();
-  ClassDef(grMuonTrack,9);
   ~grMuonTrack();
    const grMuonTrack& operator=(const grMuonTrack &right);
      Int_t operator==(const grMuonTrack&) const;

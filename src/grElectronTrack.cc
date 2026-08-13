@@ -5,9 +5,7 @@
  *      Author: Ryan Schmitz
  */
 #include "grElectronTrack.hh"
-#include "TObject.h"
 
-ClassImp(grElectronTrack)
 
 //==============================================================================
 

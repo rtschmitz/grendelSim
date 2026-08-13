@@ -8,7 +8,6 @@
 #ifndef MQSCINTHIT_HH_
 #define MQSCINTHIT_HH_
 
-#include "grScintRHit.hh"
 
 #include "G4VHit.hh"
 #include "G4THitsCollection.hh"
@@ -71,7 +70,6 @@ class grScintHit : public G4VHit
     void SetCreatorVolName(G4String vn){ creatorVolName   = vn;    };
     G4String GetCreatorVolName()const{ return creatorVolName; };
 
-    grScintRHit* ConvertToROOTHit() const;
 
   private:
 

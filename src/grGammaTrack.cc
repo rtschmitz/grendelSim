@@ -3,16 +3,14 @@
  *
  * Gamma track class. This class allows to store all necessary information about
  * gamma tracks such as ID, track length, ... .
- * It inherits from TObject and can be directly stored into a TTree.
+ * It is an in-memory record populated by grTrackingAction.
  * Track informations are assigned in the grTrackingAction.
  *
  * Created on: 22.04.2019
  * Author: schmitz
  */
 #include "grGammaTrack.hh"
-#include "TObject.h"
 
-ClassImp(grGammaTrack)
 
 //==============================================================================
 
