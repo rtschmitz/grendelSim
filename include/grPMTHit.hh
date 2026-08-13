@@ -15,7 +15,6 @@
 #include "G4LogicalVolume.hh"
 #include "G4Transform3D.hh"
 #include "G4RotationMatrix.hh"
-#include "grPMTRHit.hh"
 
 //#include "G4VPhysicalVolume.hh"
 #include <vector>
@@ -87,7 +86,6 @@ public:
 
   static bool compareHits(grPMTHit* const &a, grPMTHit* const &b);
 
-  grPMTRHit* ConvertToROOTHit() const;
 
 
 

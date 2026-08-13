@@ -19,9 +19,7 @@
 #include "grScintHit.hh"
 #include "G4ThreeVector.hh"
 #include "globals.hh"
-#include "grROOTEvent.hh"
 
-#include <TObject.h>
 const int numDetectors = 31;
 
 class grUserEventInformation : public G4VUserEventInformation
@@ -180,7 +178,6 @@ public:
 
   friend std::ostream & operator<<(std::ostream &o, grUserEventInformation const &event);
 
-  grROOTEvent* ConvertToROOTEvent();
 
   //std::vector<unsigned long> Seeds;//Seeds of the random number generator for the current event
 private:

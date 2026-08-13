@@ -118,34 +118,3 @@ void grScintHit::Print()
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-grScintRHit* grScintHit::ConvertToROOTHit() const{
-
-  grScintRHit *myROOTHit = new grScintRHit();
-
-  myROOTHit->SetEDep(this->GetHitEnergy()/MeV-this->GetExitEnergy()/MeV);
-
-//  G4ThreeVector hitVec = this->GetHitPosition();
-//  G4ThreeVector exitVec = this->GetExitPosition();
-
-//  G4ThreeVector tLength = hitVec-exitVec;
-//  myROOTHit->SetTrackLength(tLength.mag()/cm);
-  myROOTHit->SetCopyNo(this->GetCopyNo());
-  myROOTHit->SetHitPositionX(this->GetHitPosition().getX()/m);
-  myROOTHit->SetHitPositionY(this->GetHitPosition().getY()/m);
-  myROOTHit->SetHitPositionZ(this->GetHitPosition().getZ()/m);
-  myROOTHit->SetExitPositionX(this->GetExitPosition().getX()/m);
-  myROOTHit->SetExitPositionY(this->GetExitPosition().getY()/m);
-  myROOTHit->SetExitPositionZ(this->GetExitPosition().getZ()/m);
-  myROOTHit->SetHitTime(this->GetHitTime()/ns);
-  myROOTHit->SetExitTime(this->GetExitTime()/ns);
-  myROOTHit->SetParentID(this->GetParentID());
-  myROOTHit->SetParticleName(this->GetParticleName());
-  myROOTHit->SetProcName(this->GetProcName());
-  myROOTHit->SetCreatorVolName(this->GetCreatorVolName());
-  myROOTHit->SetTrackID(this->GetTrackID());
-
-
-  return myROOTHit;
-
-}

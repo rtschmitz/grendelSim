@@ -58,14 +58,18 @@ Beam particle type, event offset, rescaling, and four-vector path are configured
 
 ## Output
 
-Unless `/run/fname` supplies an output directory, both workflows create `grendelSim.root` in the build directory. The ROOT tree remains `Events` and its branch remains `ROOTEvent`; physical fields and data types are unchanged.
+Both workflows write a seed-tagged `Sim_<id>grendelSim.root` file in the build directory by default; `/run/fname` replaces that prefix. The `Events` tree uses standalone schema version 1: one row per simulated event, scalar event branches, and parallel `std::vector` branches for variable-length track and hit collections. No GRENDEL headers, shared library, ROOT dictionary, PCM, or rootmap is needed to read it.
 
-The standalone rename changes the output file from `MilliQan.root` to `grendelSim.root` and the project-owned ROOT class names from the `mq*` prefix to `gr*` (for example, `mqROOTEvent` to `grROOTEvent`, and the particle/hit record classes likewise). Existing analysis that names those C++ dictionary types must be updated; the tree name, branch name, member meanings, and stored types are otherwise preserved.
+Branch prefixes identify collections: `muon_`, `gamma_`, `neutron_`, `electron_`, `mcp_`, `photon_`, `scint_`, and `pmt_`. Elements at the same vector index describe the same track or hit. Branch names carry units where applicable: energy is MeV except optical-photon and PMT quantities explicitly suffixed `_eV`; positions are metres; scintillator and PMT times are ns; all track times are seconds. `schemaVersion` must be checked by downstream readers before interpreting a file.
+
+The writer uses LZ4 level 4 compression and 50 MiB autoflush clusters to minimize production CPU and support efficient bulk reads. The output contains only ROOT fundamental types, `std::string`, and standard-library vectors.
+
+This schema replaces the legacy `ROOTEvent` custom-object branch. In addition to eliminating its analysis-library dependency, it records event flags directly and removes redundant stored collection counts; use vector lengths for multiplicities. The old `grROOTEvent`, `gr*RHit`, `ClassDef`, dictionary, and shared-library interfaces are intentionally not available on this branch.
 
 ## Layout
 
 - `grendelSim.cc`: executable entry point and workflow selection
-- `include/`, `src/`: GRENDEL geometry, physics, generators, actions, detector response, and ROOT event model
+- `include/`, `src/`: GRENDEL geometry, physics, generators, actions, detector response, and standalone ROOT output writer
 - `macros/`: the two supported Geant4 run macros
 - `inputData/config/`: active detector, scintillator, PMT, and beam-generator configuration
 - `inputData/muon_hit_4_vecs_large.txt`: retained beam-muon input

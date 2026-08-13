@@ -12,7 +12,7 @@
 #include "grMuonTrack.hh"
 #include "grElectronTrack.hh"
 #include "grMCPTrack.hh"
-#include "grROOTEvent.hh"
+
 #include "G4PhysicalConstants.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4UnitsTable.hh"
@@ -319,62 +319,4 @@ void grUserEventInformation::AddScintHit(grScintHit *hit) {
 
 grScintHitVector* grUserEventInformation::GetScintHits(){
   return &ScintHits;
-}
-
-
-
-
-
-
-
-////////////////////Store Data in ROOT//////////////////////
-
-grROOTEvent* grUserEventInformation::ConvertToROOTEvent(){
-
-  //convert information stored in UserEventInformation into TObject
-
-  grROOTEvent *myROOTEvent = new grROOTEvent();
-  myROOTEvent->SetAbsorptionCount(this->GetAbsorptionCount());
-  myROOTEvent->SetBoundaryAbsorption(this->GetBoundaryAbsorptionCount());
-  myROOTEvent->SetEventID(this->GetEventID());
-  myROOTEvent->SetGammaTracks(this->GetGammaTracks());
-  myROOTEvent->SetNeutronTracks(this->GetNeutronTracks());
-  myROOTEvent->SetMuonTracks(this->GetMuonTracks());
-  myROOTEvent->SetElectronTracks(this->GetElectronTracks());
-  myROOTEvent->SetMCPTracks(this->GetMCPTracks());
-//  myROOTEvent->SetPMTHitCount(this->GetPECountPMT());
-  //convert G4hits into ROOT hits:
-
-  for (Int_t i = 0; i < this->PMTHits.size(); i++){
-     myROOTEvent->AddPMTRHit(this->PMTHits.at(i)->ConvertToROOTHit());
-  //   grPMTRHit* hit = this->PMTHits.at(i)->ConvertToROOTHit();
-  //   myROOTEvent->AddPMTRHit(hit);
-  //   delete hit;
-  }
-
-
-  //convert G4hits into ROOT hits:
-
-  for (Int_t i = 0; i < this->ScintHits.size(); i++){
-     myROOTEvent->AddScintRHit(this->ScintHits.at(i)->ConvertToROOTHit());
-     //grScintRHit* scinthit = this->ScintHits.at(i)->ConvertToROOTHit();
-     //myROOTEvent->AddScintRHit(scinthit);
-     //delete scinthit;
-  }
-  myROOTEvent->SetPMTSAboveThreshold(this->GetPMTSAboveThreshold());
-  myROOTEvent->SetPhotonCountCeren(this->GetPhotonCount_Cheren());
-  myROOTEvent->SetPhotonCountScint(this->GetPhotonCount_Scint());
-  myROOTEvent->SetPhotonTracks(this->GetPhotonTracks());
-//  myROOTEvent->SetGammaOutScintillator(this->GetGammaOutScintillator());
-  myROOTEvent->SetMuonTrigger(this->GetMuonTrigger());
-//  myROOTEvent->SetScintToPMT(this->GetScintToPMT());
-  myROOTEvent->SetEventEnergyDeposit(this->GetEventEnergyDeposit());
-  myROOTEvent->SetBarHit(this->GetBarHit());
-  myROOTEvent->SetSlabHit(this->GetSlabHit());
-  myROOTEvent->SetPanelHit(this->GetPanelHit());
-  myROOTEvent->SetEventWeight(this->GetEventWeight());
-  //process name is empty; fill by adding process names to read in files, setting in grEventAction
-  myROOTEvent->SetProcessID(this->GetProcessID());
-  return myROOTEvent;
-
 }

@@ -13,7 +13,6 @@
 
 
 #include "grPMTHit.hh"
-#include "grPMTRHit.hh"
 #include "G4Step.hh"
 #include "G4ios.hh"
 #include "G4VVisManager.hh"
@@ -27,7 +26,6 @@
 #include "G4UnitsTable.hh"
 #include <vector>
 #include "TVector3.h"
-#include "TObject.h"
 #include "TMath.h"
 #include <iomanip>
 
@@ -121,43 +119,6 @@ void grPMTHit::Draw(){
   //    pVVisManager->Draw(*physVol,attribs,trans);
   //  }
   //}
-
-}
-
-
-grPMTRHit* grPMTHit::ConvertToROOTHit() const{
-
-  grPMTRHit *myROOTHit = new grPMTRHit();
-
-  myROOTHit->SetTrackID(this->GetTrackID());
-//  myROOTHit->SetPhotonCount(this->GetPhotonCount());
-  myROOTHit->SetFirstHitTime(this->GetHitTime()/ns);
-//  G4ThreeVector pos = this->GetHitPosition();
-//  Double_t xPos = pos.getX();
-//  Double_t yPos = pos.getY();
-//  Double_t zPos = pos.getZ();
-  ///////////////////////////////////////
-//  TVector3 rPos;
-//  rPos.SetXYZ(xPos,yPos,zPos);
-//  rPos.SetX(xPos);
-  ///////////////////////////////////////
-//  myROOTHit->SetScintToPMT(this->GetScintToPMT());
-//  myROOTHit->SetHitPosition(rPos);
-//  myROOTHit->SetInitialEDep(this->GetInitialEDep()/eV);
-//  myROOTHit->SetLastHitTime(this->GetLastHitTime()/ns);
-  myROOTHit->SetPMTNumber(this->GetPMTNumber());
-  myROOTHit->SetParentID(this->GetParentID());
-//  myROOTHit->SetTotalEDep(this->GetEDep()/eV);
-
-/*G4cout << "X-Position (G4): " << xPos << G4endl;
-G4cout << "Y-Position: " << yPos << G4endl;
-G4cout << "Z-Position: " << zPos << G4endl;
-
-G4cout << "X-Position (ROOT): " << rPos.X() << G4endl;
-G4cout << "Y-Position: " << rPos.Y() << G4endl;
-G4cout << "Z-Position: " << rPos.Z() << G4endl;
-*/
-return myROOTHit;
 
 }
 //_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_

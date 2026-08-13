@@ -1,56 +1,24 @@
-/*
- * grHistoManager.hh
- *
- *  Created on: 22.04.2019
- *      Author: schmitz
- */
-
-#ifndef MQHISTOMANAGER_HH_
-#define MQHISTOMANAGER_HH_
-
+#ifndef GRHISTOMANAGER_HH_
+#define GRHISTOMANAGER_HH_
 
 #include "globals.hh"
-#include "G4ThreeVector.hh"
-#include "TROOT.h"
-#include "TFile.h"
-#include "TSystem.h"
 
-#include "grROOTEvent.hh"
+class TFile;
+class TTree;
+class grUserEventInformation;
+struct grOutputBuffer;
 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
- class TFile;
- class TTree;
-
-
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-class grHistoManager
-{
-  public:
-
-    grHistoManager();
-   ~grHistoManager();
-
-    void book(G4String);
-    void save();
-
-
-    void FillEventNtuple(grROOTEvent* rootEvent);
-
-
-
-  private:
-
-    TFile*   rootFile;
-    TTree*   ntuplEvent;
-
-    grROOTEvent* myROOTEvent;
-
+class grHistoManager {
+public:
+  grHistoManager();
+  ~grHistoManager();
+  void book(G4String outputDirectory);
+  void save();
+  void FillEventNtuple(grUserEventInformation& event);
+private:
+  TFile* rootFile;
+  TTree* eventTree;
+  grOutputBuffer* output;
 };
 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-
-#endif /* MQHISTOMANAGER_HH_ */
+#endif

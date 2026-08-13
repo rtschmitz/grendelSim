@@ -3,7 +3,7 @@
  *
  * Gamma track class. This class allows to store all necessary information about
  * muon tracks such as ID, track length, ... .
- * It inherits from TObject and can be directly stored into a TTree.
+ * It is an in-memory record populated by grTrackingAction.
  * Track informations are assigned in the grTrackingAction.
  *
  * Created on: 22.04.2019
@@ -15,14 +15,12 @@
 
 #include <iostream>
 #include <vector>
-#include "TObject.h"
 #include "TString.h"
 #include "TVector3.h"
 //==============================================================================
-class grGammaTrack: public TObject {
+class grGammaTrack {
 public:
   grGammaTrack();
-  ClassDef(grGammaTrack,9);
   ~grGammaTrack();
    const grGammaTrack& operator=(const grGammaTrack &right);
      Int_t operator==(const grGammaTrack&) const;

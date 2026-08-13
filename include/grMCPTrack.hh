@@ -10,14 +10,12 @@
 
 #include <iostream>
 #include <vector>
-#include "TObject.h"
 #include "TString.h"
 #include "TVector3.h"
 //==============================================================================
-class grMCPTrack: public TObject {
+class grMCPTrack {
 public:
   grMCPTrack();
-  ClassDef(grMCPTrack,9);
   ~grMCPTrack();
    const grMCPTrack& operator=(const grMCPTrack &right);
      Int_t operator==(const grMCPTrack&) const;
