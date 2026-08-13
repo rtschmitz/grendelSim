@@ -58,13 +58,15 @@ Beam particle type, event offset, rescaling, and four-vector path are configured
 
 ## Output
 
-Both workflows write a seed-tagged `Sim_<id>grendelSim.root` file in the build directory by default; `/run/fname` replaces that prefix. The `Events` tree uses standalone schema version 1: one row per simulated event, scalar event branches, and parallel `std::vector` branches for variable-length track and hit collections. No GRENDEL headers, shared library, ROOT dictionary, PCM, or rootmap is needed to read it.
+Both workflows write a seed-tagged `Sim_<id>grendelSim.root` file in the build directory by default; `/run/fname` replaces that prefix. The `Events` tree uses standalone schema version 2 with one row per simulated event. No GRENDEL headers, shared library, ROOT dictionary, PCM, or rootmap is needed to read it.
 
-Branch prefixes identify collections: `muon_`, `gamma_`, `neutron_`, `electron_`, `mcp_`, `photon_`, `scint_`, and `pmt_`. Elements at the same vector index describe the same track or hit. Branch names carry units where applicable: energy is MeV except optical-photon and PMT quantities explicitly suffixed `_eV`; positions are metres; scintillator and PMT times are ns; all track times are seconds. `schemaVersion` must be checked by downstream readers before interpreting a file.
+The event record contains only `schemaVersion`, `runID`, `eventID`, `processID`, `eventWeight`, `trident`, `tridentGamma`, and `kaonCavern`. Selected particle collections use the prefixes `muon_`, `gamma_`, `neutron_`, `electron_`, and `kaon_`. Each stores PDG, track, and parent IDs, initial and final copy numbers, times, kinetic energies, positions where available, total track length, processes, and volume names. Elements at the same vector index describe the same track. Which particle species are collected is controlled in `grTrackingAction`.
 
-The writer uses LZ4 level 4 compression and 50 MiB autoflush clusters to minimize production CPU and support efficient bulk reads. The output contains only ROOT fundamental types, `std::string`, and standard-library vectors.
+The `scint_` collection is the reusable detector-interface record. Each crossing stores track ID, parent ID, PDG ID, sensitive-volume copy number, deposited energy, entry and exit times and positions, entry process, and origin volume. The name is retained for compatibility, but these are sensitive-detector-volume crossings used for downstream geometry and detector-response studies.
 
-This schema replaces the legacy `ROOTEvent` custom-object branch. In addition to eliminating its analysis-library dependency, it records event flags directly and removes redundant stored collection counts; use vector lengths for multiplicities. The old `grROOTEvent`, `gr*RHit`, `ClassDef`, dictionary, and shared-library interfaces are intentionally not available on this branch.
+Branch names carry units: energy is MeV, positions are metres, sensitive-volume hit times are ns, and selected-track times are seconds. The writer uses LZ4 level 4 compression and 50 MiB autoflush clusters to minimize production CPU.
+
+Schema version 2 removes all optical-photon, PMT, crystal, detector-trigger, aggregate energy-deposit, and detector-category branches. It also removes specialized track quantities such as accumulated deposits, interaction counters, momentum duplicates, cavern crossing coordinates, and optical-photon tracks. Optical transport physics and PMT geometry are not changed by this output cleanup.
 
 ## Layout
 
