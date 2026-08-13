@@ -8,7 +8,7 @@ G4Allocator<grScintHit> grScintHitAllocator;
 
 grScintHit::grScintHit()
   : trackID(-1), parentID(-1), kineticEnergy(0.), hitTime(0.),
-    hitPosition(), direction(), particleName(0), procName(), creatorVolName(), copyNo(-1) {}
+    hitPosition(), direction(), particleName(0), procName(), creatorVolName(), copyNo(-1), entering(false) {}
 
 grScintHit::~grScintHit() {}
 
@@ -19,7 +19,7 @@ const grScintHit& grScintHit::operator=(const grScintHit& right) {
   kineticEnergy = right.kineticEnergy; hitTime = right.hitTime;
   hitPosition = right.hitPosition; direction = right.direction;
   particleName = right.particleName; procName = right.procName;
-  creatorVolName = right.creatorVolName; copyNo = right.copyNo;
+  creatorVolName = right.creatorVolName; copyNo = right.copyNo; entering = right.entering;
   return *this;
 }
 
@@ -28,5 +28,5 @@ void grScintHit::Draw() {}
 void grScintHit::Print() {
   G4cout << "  trackID: " << trackID << "  Parent ID: " << parentID
          << "  Kinetic energy: " << G4BestUnit(kineticEnergy, "Energy")
-         << "  Entry position: " << G4BestUnit(hitPosition, "Length") << G4endl;
+         << (entering ? "  Entry position: " : "  Exit position: ") << G4BestUnit(hitPosition, "Length") << G4endl;
 }

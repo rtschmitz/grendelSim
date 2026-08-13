@@ -30,6 +30,7 @@ class grScintSD : public G4VSensitiveDetector
       void Initialize(G4HCofThisEvent*);
       G4bool ProcessHits(G4Step*, G4TouchableHistory*);
       G4bool ProcessHitsEnter(const G4Step*, G4TouchableHistory*);
+      G4bool ProcessHitsExit(const G4Step*, G4TouchableHistory*);
 
       void EndOfEvent(G4HCofThisEvent*);
       G4int HCID;
