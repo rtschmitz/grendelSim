@@ -1,76 +1,25 @@
-/*
- * grEventAction.hh
- *
- *  Created on: 22.04.2019
- *      Author: schmitz
- */
-
-#ifndef MQEVENTACTION_HH_
-#define MQEVENTACTION_HH_
-
+#ifndef GREVENTACTION_HH_
+#define GREVENTACTION_HH_
 
 #include "G4UserEventAction.hh"
 #include "globals.hh"
-#include "G4ThreeVector.hh"
 
 class G4Event;
 class grHistoManager;
-//const G4int PMTnb = 72;
-class grEventAction : public G4UserEventAction
-{
-public:
-  grEventAction(grHistoManager*,G4int,G4double,G4int);
-  ~grEventAction();
 
+class grEventAction : public G4UserEventAction {
 public:
+  grEventAction(grHistoManager*, G4int eventOffset, G4double eventWeight, G4int processID);
+  ~grEventAction();
   void BeginOfEventAction(const G4Event*);
   void EndOfEventAction(const G4Event*);
-
-  void SetSaveThreshold(G4int save);
-
-  void SetEventVerbose(G4int v){verbose=v;}
-
-  void SetPMTThreshold(G4int t){pmtThreshold=t;}
-
-  void SetForceDrawPhotons(G4bool b){forcedrawphotons=b;}
-
-  void SetForceDrawNoPhotons(G4bool b){forcenophotons=b;}
-
+  void SetEventVerbose(G4int value) { verbose = value; }
 private:
-
   grHistoManager* histoManager;
-
-
-  G4int  saveThreshold;
-
-  G4int  pmtCollID;
-
-  G4int  scintCollID;
-
-  G4int  verbose;
-
-  G4int  pmtThreshold;
-
-  G4bool forcedrawphotons;
-
-  G4bool forcenophotons;
-
-  G4int pmtnb;
-
-//  G4int scintnb;
-
-  G4bool storePMTHit;
-
-  G4bool storeScintHit;
-
-  G4int fEventOffset;
-
+  G4int scintCollID;
+  G4int verbose;
   G4double fEventWeight;
-
   G4int fProcessID;
-
-//  std::vector<G4double> eventWeight;
 };
 
-
-#endif /* MQEVENTACTION_HH_ */
+#endif

@@ -10,20 +10,19 @@
 
 #include <iostream>
 #include <vector>
-#include "TObject.h"
 #include "TString.h"
-#include "TVector3.h"
 //==============================================================================
-class grMCPTrack: public TObject {
+class grMCPTrack {
 public:
   grMCPTrack();
-  ClassDef(grMCPTrack,9);
   ~grMCPTrack();
    const grMCPTrack& operator=(const grMCPTrack &right);
      Int_t operator==(const grMCPTrack&) const;
 
 
   void SetTrackID(Int_t tID){trackID = tID; }
+  void SetPDGID(Int_t value){ pdgID = value; }
+  Int_t GetPDGID() const { return pdgID; }
   void SetFirstProcessName(std::string firstProcessName){ initialProcessName = firstProcessName; }
   void SetLastProcessName(TString lastProcessName){ finalProcessName = lastProcessName; }
   void SetFirstVolume(TString firstVolume){ initialVolumeName = firstVolume; }
@@ -32,8 +31,6 @@ public:
   void SetTimeOfLastProcess(Double_t timeOfLastProcess){ finalTime_s = timeOfLastProcess; }
   void SetInitialEnergy(Double_t firstEnergy){ initialEnergy_MeV = firstEnergy; }
   void SetFinalEnergy(Double_t lastEnergy){ finalEnergy_MeV = lastEnergy; }
-  void SetEnergyDeposit(Double_t energyDeposit){ energyDeposit_MeV = energyDeposit; }
-  void SetTotalEnergy(Double_t totalEnergy){totalEnergy_MeV = totalEnergy; }
   void SetParentID(Int_t pID){ parentID = pID; }
   void SetFirstPositionX(Double_t firstPositionX){ initialPositionX_m = firstPositionX; }
   void SetLastPositionX(Double_t lastPositionX) { finalPositionX_m = lastPositionX; }
@@ -51,9 +48,7 @@ public:
   Double_t GetTimeOfFirstProcess()const{ return initialTime_s; }
   Double_t GetTimeOfLastProcess()const{ return finalTime_s; }
   Double_t GetInitialEnergy()const{ return initialEnergy_MeV; }
-  Double_t GetEnergyDeposit()const{ return energyDeposit_MeV; }
   Double_t GetFinalEnergy()const{ return finalEnergy_MeV; }
-  Double_t GetTotalEnergy() const{return totalEnergy_MeV; }
 
   Int_t    GetParentID()const{ return parentID; }
   Double_t GetFirstPositionX()const{ return initialPositionX_m; }
@@ -70,14 +65,6 @@ public:
 
   //MCP track information
 
-  void SetNbOfElastics(Int_t elastics){nbOfElastics = elastics; }
-  void SetNbOfInteractions(Int_t interactions){nbOfInteractions = interactions; }
-  void AddNbOfElastics(Int_t elastics){nbOfElastics += elastics; }
-  void AddNbOfInteractions(Int_t interactions){nbOfInteractions += interactions; }
-  Int_t GetNbOfElastics()const{ return nbOfElastics; }
-  Int_t GetNbOfInteractions()const{ return nbOfInteractions; }
-  void SetEnergyDiff(Double_t EDiff){energyDiff = EDiff;}
-  Double_t GetEnergyDiff()const{return energyDiff; }
 
   // order tracks accordong to timing information
   static bool compareHits(grMCPTrack* const &a, grMCPTrack* const &b);
@@ -87,6 +74,7 @@ public:
   private:
 
   Int_t trackID;
+  Int_t pdgID;
   std::string initialProcessName ; //Name of the first process of the given track
   TString finalProcessName   ; //Name of the last process of the given track
   TString initialVolumeName  ; //Name of the volume where the track starts
@@ -97,7 +85,6 @@ public:
    Double_t finalTime_s         ; //Global time when the last process occurs
   Double_t initialEnergy_MeV     ; //The kinetic energy at the begin of the track
   Double_t finalEnergy_MeV       ; //The kinetic energy at the end of the track
-  Double_t energyDeposit_MeV       ; //The kinetic energy at the end of the track
   Int_t    parentID          ; //The track ID of the parent track. If the track is a primary then it's zero.
   Double_t initialPositionX_m  ; //The position of the vertex of the track
   Double_t finalPositionX_m    ; //The position of the end of the track
@@ -106,10 +93,6 @@ public:
   Double_t initialPositionZ_m  ; //The position of the vertex of the track
   Double_t finalPositionZ_m    ; //The position of the end of the track
   Double_t totalTrackLength_m  ; //The total track length of the track
-  Double_t totalEnergy_MeV       ; //Energy loss of the track
-  Int_t nbOfElastics         ; //Number of elastic scatterings of the track
-  Int_t nbOfInteractions     ; //Number of interactions of the track
-  Double_t energyDiff; // MCP energy difference between creation and end of track
 
 
 };

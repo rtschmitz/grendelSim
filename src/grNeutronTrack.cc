@@ -5,29 +5,22 @@
  *      Author: schmitz
  */
 #include "grNeutronTrack.hh"
-#include "TObject.h"
 
-ClassImp(grNeutronTrack)
 
 //==============================================================================
 
 grNeutronTrack::grNeutronTrack() :
       trackID(-1),
+      pdgID(0),
       initialProcessName(""),finalProcessName(""),
       initialVolumeName(""), finalVolumeName(""),
       initialTime_s(0.), finalTime_s(0.),
       initialEnergy_MeV(0.),finalEnergy_MeV(0.),
-      totalEnergy_MeV(0.),
       parentID(-1),
       initialPositionX_m(0.),finalPositionX_m(0.),
       initialPositionY_m(0.),finalPositionY_m(0.),
       initialPositionZ_m(0.),finalPositionZ_m(0.),
-      totalTrackLength_m(0.0),
-      nbOfElastics(-1),
-      nbOfInteractions(-1),
-      energyEnterScinti_MeV(0.){
-
-}
+      totalTrackLength_m(0.0) {}
 
 
 //==============================================================================
@@ -36,6 +29,7 @@ grNeutronTrack::~grNeutronTrack() {
 const grNeutronTrack& grNeutronTrack::operator=(const grNeutronTrack &right){
 
   trackID        = right.trackID           ;
+  pdgID            = right.pdgID;
   initialProcessName = right.initialProcessName;
   finalProcessName   = right.finalProcessName  ;
   initialVolumeName  = right.initialVolumeName ;
@@ -44,7 +38,6 @@ const grNeutronTrack& grNeutronTrack::operator=(const grNeutronTrack &right){
   finalTime_s        = right.finalTime_s       ;
   initialEnergy_MeV  = right.initialEnergy_MeV ;
   finalEnergy_MeV    = right.finalEnergy_MeV   ;
-  totalEnergy_MeV       = right.totalEnergy_MeV       ;
   parentID           = right.parentID          ;
   initialPositionX_m = right.initialPositionX_m;
   finalPositionX_m   = right.finalPositionX_m  ;
@@ -53,9 +46,6 @@ const grNeutronTrack& grNeutronTrack::operator=(const grNeutronTrack &right){
   initialPositionZ_m = right.initialPositionZ_m;
   finalPositionZ_m   = right.finalPositionZ_m  ;
   totalTrackLength_m = right.totalTrackLength_m;
-  nbOfElastics       = right.nbOfElastics      ;
-  nbOfInteractions   = right.nbOfInteractions  ;
-  energyEnterScinti_MeV  = right.energyEnterScinti_MeV ;
 
   return *this;
 }

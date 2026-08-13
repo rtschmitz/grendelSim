@@ -11,7 +11,7 @@ if(DEFINED ENV{ROOTSYS} AND EXISTS "$ENV{ROOTSYS}/cmake/ROOTConfig.cmake")
   list(PREPEND CMAKE_PREFIX_PATH "$ENV{ROOTSYS}/cmake")
   message(STATUS "Using ROOT from ROOTSYS: $ENV{ROOTSYS}/cmake")
 endif()
-find_package(ROOT 6 REQUIRED COMPONENTS Cling Physics)
+find_package(ROOT 6 REQUIRED COMPONENTS Core RIO Tree)
 find_package(Boost REQUIRED)
 include(${Geant4_USE_FILE})
 include(${ROOT_USE_FILE})
@@ -38,17 +38,13 @@ set(GRENDEL_SOURCES
   src/grNeutronTrack.cc
   src/grPMTHit.cc
   src/grPMTParameterisation.cc
-  src/grPMTRHit.cc
   src/grPMTSD.cc
-  src/grPhotonTrack.cc
   src/grPrimaryGeneratorAction.cc
   src/grPrimaryGeneratorActionMessenger.cc
   src/grPrimaryGeneratorMessenger.cc
-  src/grROOTEvent.cc
   src/grRunAction.cc
   src/grRunActionMessenger.cc
   src/grScintHit.cc
-  src/grScintRHit.cc
   src/grScintSD.cc
   src/grSession.cc
   src/grSessionMessenger.cc
@@ -61,35 +57,6 @@ set(GRENDEL_SOURCES
   src/grUserEventInformation.cc
   src/grUserTrackInformation.cc
 )
-set(GRENDEL_DICTIONARY_HEADERS
-  include/grGammaTrack.hh
-  include/grNeutronTrack.hh
-  include/grMuonTrack.hh
-  include/grElectronTrack.hh
-  include/grMCPTrack.hh
-  include/grPhotonTrack.hh
-  include/grPMTRHit.hh
-  include/grScintRHit.hh
-  include/grROOTEvent.hh
-)
-set(GRENDEL_DICTIONARY_SOURCES
-  src/grGammaTrack.cc
-  src/grNeutronTrack.cc
-  src/grMuonTrack.cc
-  src/grElectronTrack.cc
-  src/grMCPTrack.cc
-  src/grPhotonTrack.cc
-  src/grPMTRHit.cc
-  src/grScintRHit.cc
-  src/grROOTEvent.cc
-)
-list(REMOVE_ITEM GRENDEL_SOURCES ${GRENDEL_DICTIONARY_SOURCES})
-ROOT_GENERATE_DICTIONARY(grendelSimDict ${GRENDEL_DICTIONARY_HEADERS}
-  LINKDEF include/EventLinkDef.hh)
-add_library(grendelSimCore SHARED ${GRENDEL_DICTIONARY_SOURCES}
-  ${CMAKE_CURRENT_BINARY_DIR}/grendelSimDict.cxx)
-target_include_directories(grendelSimCore PUBLIC include ${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
-target_link_libraries(grendelSimCore PUBLIC ${ROOT_LIBRARIES} ${ROOT_COMPONENT_LIBRARIES})
 
 add_executable(grendelSim grendelSim.cc ${GRENDEL_SOURCES})
 target_compile_features(grendelSim PRIVATE cxx_std_17)
@@ -98,7 +65,8 @@ if(GRENDEL_WITH_UIVIS)
   target_compile_definitions(grendelSim PRIVATE G4UI_USE G4VIS_USE)
 endif()
 target_include_directories(grendelSim PRIVATE include ${Boost_INCLUDE_DIRS})
-target_link_libraries(grendelSim PRIVATE grendelSimCore ${Geant4_LIBRARIES}
+target_link_libraries(grendelSim PRIVATE ${Geant4_LIBRARIES}
   ${ROOT_LIBRARIES} ${ROOT_COMPONENT_LIBRARIES})
 set_target_properties(grendelSim PROPERTIES BUILD_RPATH "$ORIGIN")
 file(COPY inputData/config DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY macros/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
