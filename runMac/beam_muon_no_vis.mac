@@ -1,0 +1,19 @@
+#quick way to get the muon sim to run
+
+/run/initialize
+/gps/position -65 120 -300 cm
+
+/gps/pos/type Plane
+/gps/pos/shape Rectangle
+/gps/pos/halfx 25 cm         #this makes a 50x50cm plane and generates the muons uniformly across it
+/gps/pos/halfy 25 cm
+/gps/pos/rot1 1 0 0
+/gps/pos/rot2 0 1 0
+/gps/direction 0 0 1
+
+/gps/particle mu-
+/gps/ene/type Mono
+/gps/ene/mono 4 GeV
+
+#/run/fname /media/ryan/Storage/computing/mqBarTestStand/data/Test/
+/run/beamOn 1

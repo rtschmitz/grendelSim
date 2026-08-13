@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/EurecaSimulation/!svn/ver/27/branches/KIT-WaterCherenkovDetector/macros
+END
+drawGeom.mac
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/EurecaSimulation/!svn/ver/16/branches/KIT-WaterCherenkovDetector/macros/drawGeom.mac
+END
+muonZenith.mac
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/EurecaSimulation/!svn/ver/27/branches/KIT-WaterCherenkovDetector/macros/muonZenith.mac
+END
+muonShower.mac
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/EurecaSimulation/!svn/ver/27/branches/KIT-WaterCherenkovDetector/macros/muonShower.mac
+END
+muonZenith_vis.mac
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/EurecaSimulation/!svn/ver/11/branches/KIT-WaterCherenkovDetector/macros/muonZenith_vis.mac
+END
+muonShower_vis.mac
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/EurecaSimulation/!svn/ver/11/branches/KIT-WaterCherenkovDetector/macros/muonShower_vis.mac
+END
+LED.mac
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/EurecaSimulation/!svn/ver/16/branches/KIT-WaterCherenkovDetector/macros/LED.mac
+END
+ambientN_Th.mac
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/EurecaSimulation/!svn/ver/11/branches/KIT-WaterCherenkovDetector/macros/ambientN_Th.mac
+END

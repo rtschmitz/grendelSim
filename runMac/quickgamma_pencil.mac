@@ -1,0 +1,93 @@
+#quick way to get the muon sim to run
+
+/vis/scene/create
+/vis/open OGLIX 800x800-0+0
+/vis/verbose errors
+/vis/viewer/set/style surface
+/vis/viewer/set/autoRefresh false
+/vis/viewer/set/upVector 1 0 0
+/vis/viewer/set/viewpointVector 0 1 0
+
+/run/initialize
+/vis/drawVolume
+/vis/viewer/flush
+
+#/gps/position 900 0 177.3 cm   #Z position here is chosen by projecting 4th layer at 43.1deg angle
+#/gps/position 100 3.5 -138.5 cm
+/gps/position 100 3.5 -138.5 cm
+#/gps/pos/type Plane
+#/gps/pos/shape Rectangle
+#/gps/pos/halfx 6 cm
+#/gps/pos/halfy 170 cm
+
+#/gps/pos/halfx 2.5 cm
+#/gps/pos/halfy 29.2 cm # = 40cm*cos(43.1*deg)
+#/gps/pos/rot1 0 1 0
+#/gps/pos/rot2 0 0 1
+#/gps/direction -1 0 0.93578
+/gps/direction -0.93578 0 1
+#######################################
+#/gps/position 10 0 9 cm
+#/gps/pos/type Plane
+#/gps/pos/shape Rectangle
+#/gps/pos/halfx 2 cm
+#/gps/pos/halfy 0.5 cm
+#/gps/pos/rot1 0 1 0
+#/gps/pos/rot2 0 0 1
+#/gps/direction -1 0 0
+###################################3##
+/gps/particle gamma
+
+/gps/ene/type User
+/gps/hist/type energy
+
+/gps/hist/point 0.706581091302968 4278.7939228864
+/gps/hist/point 1.21282707262527 1483.50407594096
+/gps/hist/point 1.7386952340939 1034.38423374044
+/gps/hist/point 2.30742977057795 807.262320344911
+/gps/hist/point 2.79851329393847 705.159096361218
+/gps/hist/point 3.43805523088551 615.969974875719
+/gps/hist/point 4.2237511596681 480.720156940969
+/gps/hist/point 5.3931633608025 375.167424899202
+/gps/hist/point 6.7983298848686 267.550766197477
+/gps/hist/point 8.90677887490001 182.394366008779
+/gps/hist/point 12.2852917594934 113.622653286411
+/gps/hist/point 15.4861739809169 70.7812835579732
+/gps/hist/point 20.5517667358991 45.09826866308
+/gps/hist/point 26.2418478669374 29.389299403995
+/gps/hist/point 32.6562626566039 17.5011619715352
+/gps/hist/point 41.1647175310992 11.405025167193
+/gps/hist/point 51.8900153160213 6.64027354818638
+/gps/hist/point 65.4097453107198 4.52679878723419
+/gps/hist/point 80.8762915264541 3.12097561343247
+/gps/hist/point 101.294669592927 2.01106345865508
+/gps/hist/point 126.054588560748 1.40222893109673
+/gps/hist/point 167.287575567896 1.0699507430108
+/gps/hist/point 276.274487609747 0.934622464194973
+/gps/hist/point 456.265758200614 0.835019416657504
+/gps/hist/point 803.57780505635 0.713150312208908
+/gps/hist/point 1433.58873934957 0.651672453848651
+/gps/hist/point 2248.82317016409 0.582223489281493
+/gps/hist/point 4196.6720060107 0.497249351180971
+#/gps/hist/inter Log
+
+/vis/scene/endOfEventAction accumulate 1
+/tracking/storeTrajectory 1
+/vis/scene/add/trajectories
+
+/vis/modeling/trajectories/create/drawByParticleID
+/vis/modeling/trajectories/drawByParticleID-0/set gamma green
+/vis/modeling/trajectories/drawByParticleID-0/set neutron magenta
+/vis/modeling/trajectories/drawByParticleID-0/set e+ blue
+/vis/modeling/trajectories/drawByParticleID-0/set e- black
+/vis/modeling/trajectories/drawByParticleID-0/set opticalphoton cyan
+/vis/modeling/trajectories/drawByParticleID-0/set mu- red
+/vis/modeling/trajectories/drawByParticleID-0/set proton yellow
+#/vis/modeling/trajectories/list
+/vis/viewer/set/background white
+/vis/viewer/zoomTo 3
+/vis/viewer/set/viewpointVector 0 0 1
+/vis/viewer/flush
+/run/beamOn 1
+
+

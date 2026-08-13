@@ -1,0 +1,76 @@
+==================================================
+         	Slab Numbering Guide
+==================================================
+The PMTs are numbered as (num)+4*(4*y+12*z+i)
+the slabs are numbered as 18+4*y+12*z+i
+i=layer number (0 is closest to ground, 3 is closest to ceiling)
+z=numbering down the axis of the cavern (0 is closest to the IP, or furthest left in the default view)
+y=numbering horizontal to the axis of the cavern (0 is closest to the viewer in the default view, 3 is furthest into the page in the default view). From the perspective of the IP, 0 should be furthest right and 2 furthest left
+num=18,19,20,21 based on the four PMTs on each slab (can see exact position definitions around line 1229 of src/mqDetectorConstruction.cc, but we mainly care about the sum over all PMTs, so not a huge deal)
+one way of visualizing this: from a top-down view, the numbering looks like this for slabs:
+==================================================
+These are the slab numbers subtracted by 18. I do it this way to make separating the volumes easier, and it's easier to map these numbers onto the PMT numbers. but strictly speaking the slab numbers in the datafiles add 18 to these:
+
+
+(cavern walls are on the left and right of this picture). 0 is to the right when standing closer to the IP
+
+                                                                                                       away from IP, highest above ground
+                                                                                                              ______________
+                                                                                                             |  47    43   39 |
+                                                                                                             |   35   31   27 |
+                                                                                                             |   23   19   15 |
+                                                                                                             |   11    7   3  |
+                                                                                                             -----------------
+                                                                          ______________
+                                                                         |  46    42   38 |
+                                                                         |   34   30   26 |
+                                                                         |   22   18   14 |
+                                                                         |   10    6    2 |
+                                                                         -----------------
+                                     ______________
+                                    |  45    41   37 |
+                                    |   33   29   25 |
+                                    |   21   17   13 |
+                                    |   9    5     1 |
+                                    -----------------
+______________
+|  44    40   36 |
+|   32   28   24 |
+|   20   16   12 |
+|   8    4     0 |
+-----------------
+towards IP, lowest to ground
+
+
+And then add 18 to all these numbers. I chose to do that originally because the demonstrator had 18 total bars, so by making the layer number >18 you would guarantee to not reuse any volume numbers. in analysis, you can just subtract the slab number by 18 to make things simple). this has the convenient feature that each set of signal paths is labeled together. so, the slab in the front right is all 0-1-2-3, so when we go do signal reconstruction we can just look for even sets of 4 and tag on those.
+
+
+I assume the data convention for slabs will instead be (choosing to make the groups of 2 adjacent within each layer):
+
+                                                                                                       away from IP, highest above ground
+                                                                                                              ______________
+                                                                                                             |   47   43   39 |
+                                                                                                             |   46   42   38 |
+                                                                                                             |   45   41   37 |
+                                                                                                             |   44   40   36 |
+                                                                                                             -----------------
+                                                                          ______________
+                                                                         |   35   31   27 |
+                                                                         |   34   30   26 |
+                                                                         |   33   29   25 |
+                                                                         |   32   28   24 |
+                                                                         -----------------
+                                     ______________
+                                    |   23   19   15 |
+                                    |   22   18   14 |
+                                    |   21   17   13 |
+                                    |   20   16   12 |
+                                    -----------------
+______________
+|   11    7   3 |
+|   10    6   2 |
+|   9    5    1 |
+|   8    4    0 |
+-----------------
+towards IP, lowest to ground
+ 

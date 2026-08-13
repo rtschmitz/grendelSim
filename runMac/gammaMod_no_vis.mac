@@ -1,0 +1,36 @@
+#quick way to get the muon sim to run
+/run/initialize
+/gps/position 26 0 -30.02 cm
+#/gps/position 100 17 -8.5 cm
+#/gps/direction -1 0 0
+#/gps/direction -1 0 0
+/gps/particle gamma
+/gps/ene/type User
+/gps/hist/type energy
+
+#Unif
+#/gps/hist/point 0 0
+#/gps/hist/point 0.001 100
+#/gps/hist/point 0.800 100
+#/gps/hist/point 0.801 0
+
+#Cd109
+/gps/hist/point 0 0
+/gps/hist/point 0.022095 0
+/gps/hist/point 0.022100 84
+/gps/hist/point 0.022105 0
+/gps/hist/point 0.025005 0
+/gps/hist/point 0.025010 17
+/gps/hist/point 0.025015 0
+/gps/hist/point 0.088035 0
+/gps/hist/point 0.088040 8
+/gps/hist/point 0.088045 0
+
+#/gps/ene/type Mono
+#/gps/ene/mono 25 keV
+
+/gps/ang/type iso
+
+#/run/fname /media/ryan/Storage/computing/milliQanFullSim/data/gammaEDepSpectrum/
+#/run/beamOn 10000000
+/run/beamOn 100

@@ -1,0 +1,90 @@
+#quick way to get the muon sim to visualize
+
+/vis/scene/create
+/vis/open OGLSX 1600x1200-0+0
+/vis/verbose errors
+/vis/viewer/set/style surface
+/vis/viewer/set/autoRefresh false
+/vis/viewer/set/upVector 1 0 0
+#/vis/viewer/set/viewpointVector 1 -1 -1
+/vis/viewer/set/viewpointVector 0 1 0
+
+
+
+/run/initialize
+/vis/drawVolume
+/vis/viewer/set/background white
+/vis/scene/add/eventID
+/vis/viewer/zoomTo 3
+/vis/scene/add/trajectories rich
+/vis/modeling/trajectories/create/drawByParticleID
+/vis/modeling/trajectories/drawByParticleID-0/default/setTimeSliceInterval 0.01 ns
+/vis/modeling/trajectories/drawByParticleID-0/set gamma green
+/vis/modeling/trajectories/drawByParticleID-0/set neutron magenta
+/vis/modeling/trajectories/drawByParticleID-0/set e+ yellow
+/vis/modeling/trajectories/drawByParticleID-0/set e- black
+/vis/modeling/trajectories/drawByParticleID-0/set opticalphoton cyan
+/vis/modeling/trajectories/drawByParticleID-0/set mu- red
+/vis/modeling/trajectories/drawByParticleID-0/set proton orange
+/vis/modeling/trajectories/drawByParticleID-0/set monopole blue
+
+#        /vis/viewer/set/timeWindow/displayLightFront true 20 0 0 cm -0.01 ns
+        /vis/viewer/set/timeWindow/displayHeadTime true
+        /vis/viewer/set/timeWindow/fadeFactor 1
+        /control/execute specmuonFullPropagated_no_vis.mac
+        # Then set a time window and save
+        /vis/viewer/set/timeWindow/startTime 0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 2.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 4.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 6.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 8.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 10.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 12.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 14.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 16.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 18.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 20.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 22.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 24.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 26.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 28.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 30.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 32.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 34.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 36.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 38.0 ns .5 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 40.0 ns .5 ns
+        /vis/viewer/save
+        # Then another view, the next time window, and a save...
+        # ...repeat a few more times
+        # Then try
+        /vis/viewer/interpolate
+
+
+#/vis/viewer/zoomTo 3
+#/vis/viewer/panTo -1
+
+
+/vis/scene/endOfEventAction accumulate 1
+/tracking/storeTrajectory 1
+

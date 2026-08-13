@@ -1,0 +1,19 @@
+#quick way to get the muon sim to run
+
+/run/initialize
+
+/control/verbose 0 #2
+/run/verbose 0 #2
+/event/verbose 0 #0
+/tracking/verbose 0 #1
+/run/particle/verbose 0
+/process/verbose 0
+
+#/gun/yvertex 300 cm
+#/gun/xvertex 300 cm
+#/gun/zvertex 50 cm
+#/gun/particle monopole
+/run/fname /net/cms26/cms26r0/dgimani/milliq_mcgen/G4_output/m_4p7/c_0p02/
+/run/beamOn 58443
+
+

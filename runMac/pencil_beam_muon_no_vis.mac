@@ -1,0 +1,13 @@
+#quick way to get the muon sim to run
+
+/run/initialize
+/gps/position -65 120 -300 cm
+
+/gps/direction 0 0 1
+
+/gps/particle mu-
+/gps/ene/type Mono
+/gps/ene/mono 4 GeV
+
+#/run/fname /media/ryan/Storage/computing/mqBarTestStand/data/Test/
+/run/beamOn 1

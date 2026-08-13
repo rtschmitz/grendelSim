@@ -1,0 +1,157 @@
+#quick way to get the muon sim to run
+
+/run/initialize
+#######################################################
+/gps/position 3.25 0 7 cm
+/run/fname /data/cdms1/schmitz/gridAttLengTest/R100A2p5/7cm/
+/gps/pos/type Plane
+/gps/pos/shape Rectangle
+/gps/pos/halfx 2 cm
+/gps/pos/halfy 1 cm
+/gps/pos/rot1 0 1 0
+/gps/pos/rot2 0 0 1
+/gps/ang/type user
+/gps/hist/type theta
+# cos^2 3D zenith angle distribution
+/gps/hist/point 0.0029069          0
+/gps/hist/point  0.019821 0.00058017
+/gps/hist/point  0.036735  0.0014304
+/gps/hist/point  0.053649  0.0024907
+/gps/hist/point  0.070563  0.0035311
+/gps/hist/point  0.087478  0.0041212
+/gps/hist/point   0.10439  0.0046914
+/gps/hist/point   0.12131  0.0051816
+/gps/hist/point   0.13822  0.0063219
+/gps/hist/point   0.15513  0.0071521
+/gps/hist/point   0.17205  0.0077923
+/gps/hist/point   0.18896  0.0086926
+/gps/hist/point   0.20588  0.0097929
+/gps/hist/point   0.22279   0.009863
+/gps/hist/point    0.2397   0.010823
+/gps/hist/point   0.25662   0.011834
+/gps/hist/point   0.27353   0.012104
+/gps/hist/point   0.29045   0.012644
+/gps/hist/point   0.30736   0.012924
+/gps/hist/point   0.32428   0.014294
+/gps/hist/point   0.34119   0.015155
+/gps/hist/point    0.3581   0.015395
+/gps/hist/point   0.37502   0.015585
+/gps/hist/point   0.39193   0.016795
+/gps/hist/point   0.40885   0.016805
+/gps/hist/point   0.42576   0.017705
+/gps/hist/point   0.44267   0.018265
+/gps/hist/point   0.45959   0.017375
+/gps/hist/point    0.4765   0.017785
+/gps/hist/point   0.49342   0.018946
+/gps/hist/point   0.51033   0.018976
+/gps/hist/point   0.52724   0.018746
+/gps/hist/point   0.54416   0.019996
+/gps/hist/point   0.56107   0.018476
+/gps/hist/point   0.57799   0.020326
+/gps/hist/point    0.5949   0.018846
+/gps/hist/point   0.61182   0.019966
+/gps/hist/point   0.62873   0.019666
+/gps/hist/point   0.64564   0.019016
+/gps/hist/point   0.66256   0.019136
+/gps/hist/point   0.67947   0.019036
+/gps/hist/point   0.69639   0.020036
+/gps/hist/point    0.7133   0.019316
+/gps/hist/point   0.73021   0.019016
+/gps/hist/point   0.74713   0.018486
+/gps/hist/point   0.76404   0.018876
+/gps/hist/point   0.78096   0.018135
+/gps/hist/point   0.79787   0.017825
+/gps/hist/point   0.81478   0.017285
+/gps/hist/point    0.8317   0.017305
+/gps/hist/point   0.84861   0.016245
+/gps/hist/point   0.86553   0.016665
+/gps/hist/point   0.88244   0.016325
+/gps/hist/point   0.89936   0.015505
+/gps/hist/point   0.91627   0.015155
+/gps/hist/point   0.93318   0.015665
+/gps/hist/point    0.9501   0.014634
+/gps/hist/point   0.96701   0.013144
+/gps/hist/point   0.98393   0.012974
+/gps/hist/point    1.0008   0.012714
+/gps/hist/point    1.0178   0.011603
+/gps/hist/point    1.0347   0.011273
+/gps/hist/point    1.0516   0.010583
+/gps/hist/point    1.0685   0.010993
+/gps/hist/point    1.0854   0.010443
+/gps/hist/point    1.1023  0.0093328
+/gps/hist/point    1.1192  0.0090727
+/gps/hist/point    1.1362  0.0084025
+/gps/hist/point    1.1531  0.0079224
+/gps/hist/point      1.17  0.0075023
+/gps/hist/point    1.1869  0.0072222
+/gps/hist/point    1.2038  0.0062919
+/gps/hist/point    1.2207  0.0061618
+/gps/hist/point    1.2376  0.0055217
+/gps/hist/point    1.2546  0.0050015
+/gps/hist/point    1.2715  0.0045614
+/gps/hist/point    1.2884  0.0037911
+/gps/hist/point    1.3053  0.0036911
+/gps/hist/point    1.3222  0.0030809
+/gps/hist/point    1.3391  0.0026708
+/gps/hist/point     1.356  0.0021506
+/gps/hist/point     1.373  0.0020506
+/gps/hist/point    1.3899  0.0017605
+/gps/hist/point    1.4068  0.0014804
+/gps/hist/point    1.4237  0.0012404
+/gps/hist/point    1.4406 0.00095029
+/gps/hist/point    1.4575 0.00063019
+/gps/hist/point    1.4744 0.00057017
+/gps/hist/point    1.4913 0.00035011
+/gps/hist/point    1.5083 0.00024007
+/gps/hist/point    1.5252 0.00010003
+/gps/hist/point    1.5421 7.0021e-05
+/gps/hist/point     1.559 2.0006e-05
+
+#/gps/hist/file /home/schmitz/sim/HannahTestStand/MuonAngDist30Deg.dat
+
+#########################################################
+#/gps/position 10 0 1 cm #2.25cm
+#/gps/pos/type Plane
+#/gps/pos/shape Rectangle
+#/gps/pos/halfx 1 cm
+#/gps/pos/halfy 1 cm
+#/gps/pos/rot1 0 1 0
+#/gps/pos/rot2 0 0 1
+#/gps/direction -1 0 0
+
+############## Monoenergetic Particle Sources ###########
+
+/gps/particle mu-
+/gps/ene/type Mono
+/gps/ene/mono 4 GeV
+
+#/gps/particle gamma
+#/gps/ene/type Mono 
+#/gps/ene/mono 511 keV
+
+########   Cf252 Neutron Spectrum  #############
+#/gps/particle neutron
+#/gps/ene/type Arb
+#/gps/hist/reset energy
+#/gps/ene/min 0 MeV
+#/gps/ene/max 30 MeV
+#/gps/ene/emspec true
+#/gps/ene/diffspec true
+#/gps/hist/type arb
+#/gps/hist/file /home/schmitz/sim/SlabGeom/Cf252Spectrum.dat
+#/gps/hist/inter Lin
+
+########   Cf252 Gamma Spectrum  #############
+#/gps/particle gamma
+#/gps/ene/type Arb
+#/gps/hist/reset energy
+#/gps/ene/min 0 MeV
+#/gps/ene/max 8 MeV
+#/gps/ene/emspec true
+#/gps/ene/diffspec true
+#/gps/hist/type arb
+#/gps/hist/file /home/schmitz/sim/SlabGeom/Cf252GammaSpectrum.dat
+#/gps/hist/inter Lin
+
+###################################################
+/run/beamOn 20000

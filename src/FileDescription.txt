@@ -1,0 +1,55 @@
+The source files and their associated functions are described here, roughly in order of importance:
+
+=========== UPDATED 8 JULY 2019 by R. Schmitz =================
+
+mqDetectorConstruction: The detector geometry and material properties are assembled here. Here is where you modify the number of bars per layer, the number of layers, the material type of each bar, the shape of the bars, etc... all the associated geometric information about the detector bars and their composition. There is also information about the optical interfaces between each geometry volume, including indices of refraction and reflectivities as well as scintillation spectra for the scintillator. Finally, we also define the PMTs here and attach a quantum efficiency to them. This is probably the most important file, the one that gets modified the most often (at least, so far)
+Types:
+
+default: 4x4 milliqan Run3 bar detector
+defaultNoCavern: Same but with cavern turned off
+NaIOnly: Just a PMT, NaI, and plastic mount
+superMod: A milliqan supermodule, with Al shell simulated explicitly
+
+mqBarParameterisation and mqPMTParameterisation: Here we set up the parameterisation for constructing the bars and the PMTs. If you want to change the shape or material of a particular bar/PMT inside a layer, you can access that from here. There currently isn't a ComputeMaterial parameter defined yet since right now all the bars/PMTs will have the same material and scintillation properties, but in the future this is the place to adjust that if necessary
+
+mqSteppingAction: This file is responsible for the propagation of particles through the geometry. When a detection event happens, or a reflection, or any type of particle interaction happens whatsoever, you can acces information about the particle and what it interacted with here. Do you want to look at neutron captures and see which nuclei are capturing neutrons? Do you want to see whether a photon underwent compton scattering? All that information is here. Also, the explicit detection of photons is initally handled here before being passed to mqPMTSD.cc. The photons also occasionally are not detected when they approach the PMT from sharp angles, so that is handled here under the detection process as well.
+
+mqPMTSD and mqScintSD: The PMT hits are processed here. "Processed" means "extract energy, position, momentum, detection time, etc. of incoming particle". The PMT hit is then stored in the global PMT Hit collection. Same for mqScintSD but I'm not using it right now.
+
+mqPMTHit/mqScintHit and mqPMTRHit/mqScintRHit: The first pair here defines the properties of a PMT hit. Want to add a new detail about the photon hit? Add it in here. The latter converts the hit information into ROOT. I am not using the scintillator as a sensitive detector, but I include the mqScintRHit files just in case someone wanted to use that functionality.
+
+mqMuonTrack/mqNeutronTrack/mq...Track: These are all the explicitly tracked particles. Geant4 propagates all kinds of particles, but if you want explicit information saved about the initial and final positions, momenta, and so on about each particle type, you need to ask for it which is what is done here.
+
+mqTrackingAction: This stores the information about the explicitly tracked particles mentioned above.
+
+mqUserEventInformation: Want to define a global parameter on an event-by-event basis, independent of a particular PMT hit or particle track? That's done here.
+
+mqUserTrackInformation: See above, but for all types of particle tracks (not using it right now).
+
+mqShieldingPhysicsList.cc: This defines the physics list for the simulation. If you want to change physics lists, you can modify this file to be defined to whatever physics list you prefer.
+
+mqEventAction: Stores top level information about the event like the hit collection and the particle track collections
+
+mqRunAction and ...Messenger: Usually this is where you can modify some run-level parameters (see how there are different levels: Run, Event, Track, Step). I'm not really doing anything here, just using an explicit method to generate the seeds and passing the histogram to be populated
+
+mqPrimaryGeneratorAction and ..Messenger: Not using right now, but can be used to generate particles without needing explicit specification from a macro
+
+mqHistoManager: Explicitly generates and saves the ROOT file of the outputs
+
+mqGenFileName: does what it says on the box. Retrieves time and date
+
+mqSession and ..Messenger: Manages logfile output information. Allows for user interaction/commands
+mqSteppingVerbose: Managers logfile output information outputs, but for individual steps
+
+=============================================
+MilliQEMPhysics and MilliQMuonPhysics: Explicit physics process definitions for EM and Muon physics (likely redundant)
+
+MilliQMonopole: Definition of monopole particle (i.e. the millicharged particle)
+
+MilliQMonopoleEquation: Propagation of mCP through B-field
+
+MilliQMonopoleFieldSetup and Messenger: B-field setup, handling of MonopoleEquation for monopole particle propagation
+
+MilliQMonopolePhysics and messenger: Handles interaction of Monopole with various physics processes (scintillation, etc.)
+
+MilliQPrimaryGeneratorAction and Messenger: Reads in particle charge, mass, energy, position, momenta from predefined files 

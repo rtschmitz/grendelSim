@@ -1,0 +1,78 @@
+#===============================================================================
+# Geant4 macro file created by M. Hughes to simulate the LED source(s) embedded
+# in the plexiglass sidewall of the EDELWEISS-II neutron counter.
+#
+
+###################################################
+#Setting verbose level
+/control/verbose 0
+/run/verbose 0
+/tracking/verbose 0
+
+
+###################################################
+#Setting display settings
+/vis/open HepRepFile
+#/vis/open OGLIX 600x600-0+0
+#/vis/open DAWNFILE
+
+/vis/drawVolume
+/vis/viewer/set/viewpointThetaPhi 45 30 deg
+#/vis/viewer/zoom 15
+
+/vis/modeling/trajectories/create/drawByParticleID
+/vis/modeling/trajectories/drawByParticleID-0/set gamma red
+/vis/modeling/trajectories/drawByParticleID-0/set neutron green
+/vis/modeling/trajectories/drawByParticleID-0/set e+ blue
+/vis/modeling/trajectories/drawByParticleID-0/set e- blue
+/vis/modeling/trajectories/drawByParticleID-0/set opticalphoton yellow
+/vis/modeling/trajectories/drawByParticleID-0/set mu- yellow
+/vis/modeling/trajectories/drawByParticleID-0/set proton black
+/vis/modeling/trajectories/list
+
+#acc. to ApplicationDeveloperHandbook red = x-axis; green = y-axis; blue = z-axis
+/vis/scene/add/axes 0 0 0 1 m
+/vis/scene/add/trajectories 2
+/tracking/storeTrajectory 1
+/vis/scene/add/trajectories 50
+/vis/scene/endOfEventAction accumulate
+/vis/viewer/flush
+
+#===============================================================================
+# Set GPS properties
+
+/gps/particle opticalphoton            
+/gps/number 1
+/gps/source/intensity 1.
+#mean wavelength of the LED acc. to data sheet: 420+-30 nm => 2.95+-0.21 eV
+#/gps/energytype Gauss
+/gps/energytype Mono
+#/gps/ene/sigma 0.21 eV
+/gps/energy 2.95 eV
+#energy range of the implemented optical properties
+#/gps/ene/min 2.41 eV
+#/gps/ene/max 3.40 eV
+/gps/ang/type iso
+/gps/pos/type Beam
+
+
+# For LED embedded in center of long plexi wall farthest from muon veto, we need a nasty coordinate summation
+# Neutron counter is placed at the center of the world volume (0, 0, 0)
+# Then, we have to add the internal shift of NC components from the NC constructor: (165, 0, -387.5)
+# Next, add the offset for the Al foil/air gap: (0, 1, 462.95) + for plexi box: (0, 0, -0.45)
+# Finally, add the liq scin chamber center: (0, 0, -11) + offset to far edge: (0, 500, 0)
+
+###################################################
+# Start run
+# Restrict photon projection to 15-degree cone (30-deg total sweep).
+
+#LED 0
+/gps/mintheta -90. #345 deg
+/gps/maxtheta -90.1 #15 deg
+/gps/minphi 0. deg
+/gps/maxphi 0.1 deg
+#/gps/pos/centre 3.67 0. 0.72 m
+/gps/pos/centre 3.17 0. 0.72 m
+/run/initialize
+/run/beamOn 1
+

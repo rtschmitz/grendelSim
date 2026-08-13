@@ -1,0 +1,26 @@
+Flattening script outputs:
+
+TTree t;
+event: Event number
+runNumber: Placeholder for data, fixed at 1
+chan: Channel number. Has the same mapping as in the data
+layer: Layer number. -1 for front endcap, 4 for back endcap, 0-3 for the internal layers. Panels have layer number 0 for the set closer to the IP and layer number 2 for the set further from the IP.
+nPE: An implied nPE using energy deposit values. The energy deposits are converted to nPE using an averaged nPE-per-keV conversion from source data for the bars, slabs, and endcaps. This is the best value to use for the total nPE in each channel.
+time: This is the time at which the first particle of any kind hits a channel. It will be the minimum time for all MCTruth hits in that channel.
+
+MCTruth Information
+The following information is produced from the raw MCTruth hits in the simulation. These hits are produced whenever a particle enters a channel, or a particle exits a channel. In the typical case, two hits are produced when e.g. a muon passes through a bar: One with the energy, position, and time of the particle as it entered the channel, and one with the energy, position, and time as it exited the channel. The positional variables are always filled, but if e.g. the hit is one where the particle entered a channel, the hit_exitPositionY_cm variable will be set to the default value of 0.
+
+hit_chan: Channel number. Has the same mapping as in the data
+hit_layer: Layer number. -1 for front endcap, 4 for back endcap, 0-3 for the internal layers. Panels have layer number 0 for the set closer to the IP and layer number 2 for the set further from the IP.
+hit_nPE: An implied nPE using energy deposit values for the hit only. It is positive for particles entering the channel and negative for particles exiting it.
+hit_EDep_MeV: The raw energy deposit value of the hit, before scaling it and converting it to nPE using the process described above. It is positive for particles entering the channel and negative for particles exiting it.
+hit_hitTime_ns: This is the hit time of a particle if entering a channel
+hit_exitTime_ns: This is the hit time of a particle if exiting a channel
+hit_particleName: This is the PDG ID of the particle causing this hit
+hit_procName: This is the name of the physics process that created this particle originally (as a string). For primary muons this is "0"
+hit_creatorVolName: This is the volume this particle was created in originally
+hit_hitPosition(X,Y,Z)_cm: This is the position the particle hit the channel if it was entering a channel
+hit_exitPosition(X,Y,Z)_cm: This is the position the particle hit the channel if it was exiting a channel
+
+The coordinates in the sim are such that +X points up to the ceiling, +Y points to the right when looking down the axis of the detector from the IP, and +Z points down the cavern away from the IP. The detector is angled up at 43.1 degree angle from the horizontal (that is, at 0 degrees the angle would be parallel to the axis of the cavern, and at 90 degrees it would point from floor to ceiling). This should help rotate the coordinates.

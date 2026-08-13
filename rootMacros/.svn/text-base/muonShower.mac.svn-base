@@ -1,0 +1,74 @@
+# $Id: run2.mac,v 1.2 2002/12/16 16:31:42 maire Exp $
+#
+# Macro file for "detectorNeutrons.cc"
+# 
+# can be run in batch, without graphic
+# or interactively: Idle> /control/execute run2.mac
+#
+
+###################################################
+#Setting verbose level
+#/control/verbose 0
+/run/verbose 0
+/tracking/verbose 0
+
+#/EURECA/Physics/Verbose 0
+#/EURECA/nR 5
+#/EURECA/nX 12
+#/EURECA/WaterTank/Verbose 5
+#=================================
+
+#Setting display settings
+#/vis/open HepRepFile
+#/vis/open OGLIX 600x600-0+0
+#/vis/open DAWNFILE
+
+#/vis/drawVolume
+#/vis/viewer/set/viewpointThetaPhi 45 30 deg
+#/vis/viewer/zoom 15
+
+#/vis/modeling/trajectories/create/drawByParticleID
+#/vis/modeling/trajectories/drawByParticleID-0/set gamma red
+#/vis/modeling/trajectories/drawByParticleID-0/set neutron green
+#/vis/modeling/trajectories/drawByParticleID-0/set e+ blue
+#/vis/modeling/trajectories/drawByParticleID-0/set e- blue
+#/vis/modeling/trajectories/drawByParticleID-0/set opticalphoton yellow
+#/vis/modeling/trajectories/drawByParticleID-0/set mu- yellow
+#/vis/modeling/trajectories/drawByParticleID-0/set proton black
+#/vis/modeling/trajectories/list
+
+#acc. to ApplicationDeveloperHandbook red = x-axis; green = y-axis; blue = z-axis
+#/vis/scene/add/axes 0 0 0 1 m
+#/vis/scene/add/trajectories 2
+#/tracking/storeTrajectory 1
+#/vis/scene/add/trajectories 50
+#/vis/scene/endOfEventAction accumulate
+#/vis/viewer/flush
+
+###################################################
+#Set GPS properties
+/EURECA/PGA/UseMuonGenerator true
+/EURECA/PGA/SetMuonSource 1
+/EURECA/PGA/UseGeantinos false
+#Use the MUSUN data
+#/EURECA/InterfaceToMUSUN/Verbose 1
+#/EURECA/InterfaceToMUSUN/PathToMUSUNFile /kalinka/home/kluck/MUSUN/muons_lsm_test2.dat
+
+#Use Markus Horns muon generator
+/EURECA/MuonGeneratorAccToMH/Verbose 1
+/EURECA/MuonGeneratorAccToMH/PathToFrejusFile /kalinka/home/heuermann/workspace/WCD/frejus.dat
+/EURECA/MuonGeneratorAccToMH/NbOfZenithBins 90
+/EURECA/MuonGeneratorAccToMH/NbOfAzimuthBins 360
+/EURECA/MuonGeneratorAccToMH/NbOfEnergyBins 100
+/EURECA/MuonGeneratorAccToMH/EnergyMin 2 GeV
+/EURECA/MuonGeneratorAccToMH/EnergyMax 200000 GeV
+/EURECA/MuonGeneratorAccToMH/RadiusSphere 10 m
+/EURECA/MuonGeneratorAccToMH/RadiusHemisphere 30 m
+/EURECA/MuonGeneratorAccToMH/BuildLookUpTable
+#switch on muon nuclear reactions
+/physics_engine/tailor/MuonNuclear on						    
+/physics_engine/tailor/GammaNuclear on
+##################################################
+#start run
+/run/initialize
+/run/beamOn 1000

@@ -1,0 +1,38 @@
+=============  MilliQan Simulation Quickstart Guide ===================
+0) The repo is here: https://github.com/rtschmitz/milliQanSim
+1) Install dependencies, mainly: Geant4.10.07.p02 (any geant 4.10 probably works but I use this one. 4.11 will break though) and root6 (root6.26.04 ideal, probably doesn't matter). if you're running on the UCSB cmsX network my portable root6 and geant4 installations can be sourced by using the following lines in your .bashrc:
+. /net/cms17/cms17r0/schmitz/geant4/geant4.10.5-install/share/Geant4-10.5.1/geant4make/geant4make.sh
+. /net/cms17/cms17r0/schmitz/root6/install/bin/thisroot.sh
+To install Geant4 on your own machine to speed up analysis and visualization (highly encouraged!), then I suggest a standard installation of root6 and an installation of geant4.10 with the following options in the cmake:
+cmake -DGEANT4_INSTALL_DATA=ON -DGEANT4_USE_OPENGL_X11=ON -DCMAKE_INSTALL_PREFIX=/path/to/geant4.10.7-install /path/to/geant4.10.07.p02
+The installation guides are pretty straightforward imo but ask if you run into issues here. Installing root and geant should take about an hour each, mostly just the terminal doing its own thing, so shouldn't be too strenuous. You'll need a unix terminal for all this, I use Linux (specifically Ubuntu, CentOS, and Scientific Linux) but some have had success on Mac as well.
+2) In the terminal, run: git clone https://github.com/rtschmitz/milliQanSim
+3) In the terminal, run: . benchSetupSlab.sh (should do all the set up and run the default script for the bench simulations you plan to do). cosmicSetup.sh does the same but for the full detector.
+3b) If the simulation is just about to run but it segfaults and complains about G4EMDataSet... or similar in the stack trace, just run it again and it'll work. I don't know why or how to fix this except that rerunning it works whenever it happens. If you see any other error and it keeps happening after trying again, email me.
+If you can execute this and then view the outputs for the quickstart script, congrats! You've done it! I suggest loading in the custom dictionary (so, 'root libBenchCore.so' from the build dir) when opening root, which helps access the data.
+Visualization guide
+Here's roughly how I do it, using OGLIX and the default visualization script:
+cd build
+./Bench
+PreInit> /control/macroPath /media/schmitz/Storage/computing/milliQanSim/runMac/ (points to the dir with your macros)
+PreInit> /control/execute vis.mac (initializes visualization)
+Idle> /control/execute sidegamma_no_vis.mac (runs the simulation with live visualization)
+After the sim runs, I sometimes will change some parameters and run it again without fully rebooting the vis. Here are some common commands:
+/vis/viewer/flush: Redraw the display (useful when changing zoom/angle)
+/vis/viewer/zoomTo X: Can zoom to different levels by changing X
+zoom/angle)
+/vis/viewer/panTo X: Can pan to different levels by changing X
+/vis/viewer/set/viewpointVector X Y Z: Changes viewing perspective; generally either 0 1 0 or 0 0 1, sometimes 1 1 1. Play with it!
+/run/beamOn N: Runs N events
+/gps/position X Y Z: Changes position of source
+There are other ways to visualize Geant4 simulations as well. The way I do it is even sort of primitive, I'm just really used to all the command line manipulation, but I've seen some others I've introduced to Geant try HepRep or Qt, can get a sense of what's possible from these slides. But it's easiest just to use OGL if you ask me. UPDATE 7/3/23: I've added some new ways to visualize, so if you're running on the grid you can save vis. We can also save animations now. Details in the sim repo README.
+You can edit runMac/sidegammaBench_no_vis.mac as well, I think the arguments inside the macro are mostly self explanatory, but there are references on what things do as well.
+Getting used to running simulation
+--Change the visualization angle. The default is 0 1 0. What do you see if you change it to 0 0 1? What about 1 1 1? (use /vis/viewer/set/viewpointVector X Y Z and /vis/viewer/flush after opening vis using ./Bench, setting macroPath, and /control/execute vis.mac)
+--Try a few other vis commands: /vis/viewer/panTo X moves the field of view to the side, and /vis/viewer/zoomTo X zooms the display in. Very useful. Try them out!
+
+==============================================================
+Data Analysis in ROOT
+When analyzing data from the simulation in ROOT, there are a few tricks that help:
+A) If you want to look at information from the custom Geant4 classes (like GammaTracks->initialEnergy_MeV), it helps to load in the class dictionary so ROOT knows how to manipulate them. You can do that with '.x libBenchCore.so' in the root command line, or by running 'root libBenchCore.so' from the terminal. This shared dictionary .so file will be created in milliQanSim/build/ when you compile the simulation using 'make'. If you use a different geometry this file might have a different name; for example, the full simulation uses "libMilliQanCore.so".
+B) TTree->Draw() is, in my view, the most useful command in existence when it comes to quick ROOT data analysis. You can draw 1D, 2D, heatmaps, efficiencies, use cuts, overlay plots, and do nearly everything you might want. It won't solve every problem, but most of the time you just want to look at something quick, and a combination of TBrowser and TTree->Draw does a lot.

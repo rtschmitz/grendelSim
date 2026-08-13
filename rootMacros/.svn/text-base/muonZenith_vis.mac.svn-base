@@ -1,0 +1,83 @@
+#===============================================================================
+# Geant4 macro file created by M. Hughes to simulate the LED source(s) embedded
+# in the plexiglass sidewall of the EDELWEISS-II neutron counter.
+#
+
+###################################################
+#Setting verbose level
+#/control/verbose 0
+/run/verbose 0
+/tracking/verbose 0
+
+
+###################################################
+#Setting display settings
+#/vis/open HepRepFile
+#/vis/open OGLIX 600x600-0+0
+#/vis/open OGL
+/vis/open DAWNFILE
+
+/vis/drawVolume
+/vis/viewer/set/viewpointThetaPhi 45 30 deg
+/vis/viewer/zoom 15
+
+/vis/modeling/trajectories/create/drawByParticleID
+/vis/modeling/trajectories/drawByParticleID-0/set gamma red
+/vis/modeling/trajectories/drawByParticleID-0/set neutron green
+/vis/modeling/trajectories/drawByParticleID-0/set e+ blue
+/vis/modeling/trajectories/drawByParticleID-0/set e- blue
+/vis/modeling/trajectories/drawByParticleID-0/set opticalphoton cyan
+/vis/modeling/trajectories/drawByParticleID-0/set mu- black
+/vis/modeling/trajectories/drawByParticleID-0/set proton black
+/vis/modeling/trajectories/list
+
+#/vis/filtering/trajectories/create/attributeFilter
+#/vis/filtering/trajectories/attributeFilter-0/setAttribute IMag
+#/vis/filtering/trajectories/attributeFilter-0/addInterval 200 GeV 400 GeV
+#/vis/filtering/trajectories/attributeFilter-0/addInterval 3 eV 3.00005 eV
+
+
+
+/vis/filtering/trajectories/create/attributeFilter
+/vis/filtering/trajectories/attributeFilter-0/setAttribute IMag
+#/vis/filtering/trajectories/attributeFilter-0/addInterval 10 eV 200 GeV
+/vis/filtering/trajectories/attributeFilter-0/addInterval 3 eV 3.1 eV
+/vis/filtering/trajectories/create/particleFilter
+/vis/filtering/trajectories/particleFilter-0/add neutron
+/vis/filtering/trajectories/particleFilter-0/add mu-
+/vis/filtering/trajectories/particleFilter-0/add opticalphoton
+
+#acc. to ApplicationDeveloperHandbook red = x-axis; green = y-axis; blue = z-axis
+/vis/scene/add/axes 0 0 0 1 m
+/vis/scene/add/trajectories 2
+#/vis/scene/add/trajectories rich
+/tracking/storeTrajectory 1
+#/vis/scene/add/trajectories 1
+#/vis/scene/endOfEventAction accumulate
+/vis/viewer/flush
+
+#===============================================================================
+# Set GPS properties
+
+/EURECA/PGA/SetSeeds 200 300 400
+
+
+/gps/particle mu-
+/gps/number 1
+/gps/source/intensity 1.
+/gps/energytype Mono
+/gps/energy 290 GeV
+/gps/pos/centre 0 0 30 m
+
+/gps/pos/type Point
+/gps/ang/type iso
+# Restrict mu's projection to 0.1-degree cone
+/gps/mintheta 0. deg
+/gps/maxtheta 0.1 deg
+
+###################################################
+# Start run
+
+
+/run/initialize
+/run/beamOn 1

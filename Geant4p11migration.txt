@@ -1,0 +1,59 @@
+The following changes need to be made to the milliQanSim repo in order to make it compatible with Geant 4.11.2.
+
+mqPMTHit.hh
+In include/mqPMTHit.hh change 
+class G4VTouchable;
+to
+#include "G4VTouchable.hh"
+
+mqShieldingPhysicsList.cc
+In src/mqShieldingPhysicsList.cc change
+#include "G4EmProcessOptions.hh"
+to
+#include "G4EmParameters.hh"
+Also in src/mqShieldingPhysicsList.cc we now need
+#include "G4OpticalParameters.hh"
+then that class handles the photon tracks, so we do
+auto opticalPhysics = new G4OpticalPhysics();
+opticalParams->SetCerenkovTrackSecondariesFirst(false);
+opticalParams->SetScintTrackSecondariesFirst(false);
+instead of the previous
+opticalPhysics->SetTrackSecondariesFirst(kCerenkov,false);
+opticalPhysics->SetTrackSecondariesFirst(kScintillation,false);
+Furthermore, SetScintillationYieldFactor is now removed completely so that just has to be commented out, I think its fine though since its just set to 1.0, but if we want to change it I think we use ALPHASCINTILLATIONYIELD
+
+
+mqDetectorConstruction.cc
+In 4.11 the G4MaterialPropertiesTable needs to have energies sorted in increasing order. So the scintillator and PMT spectrum which are read in need to be in reverse order because low to high wavelengths are high to low energies. Actually they need a proper sorting algorithm because some of the entries appear to be out of order (or you can just fix the input .txt but a sorting algo is more robust).
+The following function seems to work:
+void SortProperty(G4double* energies, G4double* values, int n) {
+    std::vector<std::pair<G4double,G4double>> pairs;
+    for(int i=0; i<n; i++) pairs.emplace_back(energies[i], values[i]);
+    std::sort(pairs.begin(), pairs.end(),
+              [](auto &a, auto &b){ return a.first < b.first; });
+    for(int i=0; i<n; i++) {
+        energies[i] = pairs[i].first;
+        values[i]   = pairs[i].second;
+    }
+}
+Then in mqDetectorConstruction::SetOpticalPropertiesOfPS() and mqDetectorConstruction::SetOpticalPropertiesOfPMT() after reading in the spectrum do
+SortProperty(photonEnergy, EJ200_SCINT, ScintEntry);
+or 
+SortProperty(photonEnergyPMT, photocath_EFF, nEntriesPMT);
+respectively.
+We also then need to ensure that in mqDetectorConstruction::SetupGeometry()
+G4double photonEnergyAir[nEntriesAir]={1.5 * eV,6.3 * eV};
+is in the right order and
+G4double photonEnergyWrap[nEntriesWrap]={ 1.5 * eV,6.3 * eV};
+G4double photonEnergyPMT[nEntriesWrap]={ 1.5 * eV,6.3 * eV};
+as well.
+Finally, FASTCOMPONENT is now an obsolete property of scintillators, we must instead use SCINTILLATIONCOMPONENT1 and SCINTILLATIONCOMPONENT2 etc if one wants additional components.
+Similarly for FASTTIMECONSTANT, use SCINTILLATIONTIMECONSTANT1 instead.
+So
+mptPlScin->AddProperty("SCINTILLATIONCOMPONENT1", photonEnergy, EJ200_SCINT, ScintEntry);
+mptPlScin->AddConstProperty("SCINTILLATIONTIMECONSTANT1", 2.1 * ns); //decay time, according to EJ200
+
+So far that's all that I've found needs to be changed in order to get the repo to compile against G4.11.2, it may be there are other changes that results in bugs that are not obvious or trivial to fix. If there are I'll add them here. For now the geant4p11Branch branch of my repo will have all the above changes for both detectors.
+
+
+

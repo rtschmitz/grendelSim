@@ -1,0 +1,185 @@
+# $Id: run2.mac,v 1.2 2002/12/16 16:31:42 maire Exp $
+#
+# Macro file for "detectorNeutrons.cc"
+# 
+# can be run in batch, without graphic
+# or interactively: Idle> /control/execute run2.mac
+#
+
+###################################################
+#Setting verbose level
+/control/verbose 0
+/run/verbose 0
+/tracking/verbose 0
+#/EDELWEISS-II/AnalysisManager/Verbose 0
+#/EDELWEISS-II/Physics/Verbose 0
+
+###################################################
+#Open veto configuration
+#/EDELWEISS-II/positionOfWaggonEast 0.86 m
+#/EDELWEISS-II/positionOfWaggonWest 1.95 m
+
+###################################################
+#Setting display settings
+#/vis/open HepRepFile
+#/vis/open OGLIX 600x600-0+0
+#/vis/open DAWNFILE
+
+#/vis/drawVolume
+#/vis/viewer/set/viewpointThetaPhi 45 30 deg
+#/vis/viewer/zoom 15
+
+#/vis/modeling/trajectories/create/drawByParticleID
+#/vis/modeling/trajectories/drawByParticleID-0/set gamma red
+#/vis/modeling/trajectories/drawByParticleID-0/set neutron green
+#/vis/modeling/trajectories/drawByParticleID-0/set e+ blue
+#/vis/modeling/trajectories/drawByParticleID-0/set e- blue
+#/vis/modeling/trajectories/drawByParticleID-0/set opticalphoton yellow
+#/vis/modeling/trajectories/drawByParticleID-0/set mu- yellow
+#/vis/modeling/trajectories/drawByParticleID-0/set proton black
+#/vis/modeling/trajectories/list
+
+#acc. to ApplicationDeveloperHandbook red = x-axis; green = y-axis; blue = z-axis
+#/vis/scene/add/axes 0 0 0 1 m
+#/vis/scene/add/trajectories 2
+#/tracking/storeTrajectory 1
+#/vis/scene/add/trajectories 50
+#/vis/scene/endOfEventAction accumulate
+#/vis/viewer/flush
+
+###################################################
+#Set GPS properties
+
+#Ambient (alpha,n) neutrons
+#Normalize to 1
+/gps/particle neutron
+/gps/energytype Arb
+/gps/histname arb
+#N spectrum for Th, acc. to V. Kudryavtsev email 2010/June/09 - first bin is in MeV:
+/gps/hist/point 0.10 5.85E-003
+/gps/hist/point 0.20 1.16E-002
+/gps/hist/point 0.30 1.58E-002
+/gps/hist/point 0.40 1.90E-002
+/gps/hist/point 0.50 2.13E-002
+/gps/hist/point 0.60 2.28E-002
+/gps/hist/point 0.70 2.37E-002
+/gps/hist/point 0.80 2.39E-002
+/gps/hist/point 0.90 2.41E-002
+/gps/hist/point 1.00 2.43E-002
+/gps/hist/point 1.10 2.45E-002
+/gps/hist/point 1.20 2.47E-002
+/gps/hist/point 1.30 2.49E-002
+/gps/hist/point 1.40 2.52E-002
+/gps/hist/point 1.50 2.53E-002
+/gps/hist/point 1.60 2.53E-002
+/gps/hist/point 1.70 2.55E-002
+/gps/hist/point 1.80 2.59E-002
+/gps/hist/point 1.90 2.59E-002
+/gps/hist/point 2.00 2.54E-002
+/gps/hist/point 2.10 2.44E-002
+/gps/hist/point 2.20 2.36E-002
+/gps/hist/point 2.30 2.28E-002
+/gps/hist/point 2.40 2.19E-002
+/gps/hist/point 2.50 2.09E-002
+/gps/hist/point 2.60 2.01E-002
+/gps/hist/point 2.70 1.94E-002
+/gps/hist/point 2.80 1.89E-002
+/gps/hist/point 2.90 1.83E-002
+/gps/hist/point 3.00 1.76E-002
+/gps/hist/point 3.10 1.69E-002
+/gps/hist/point 3.20 1.62E-002
+/gps/hist/point 3.30 1.56E-002
+/gps/hist/point 3.40 1.49E-002
+/gps/hist/point 3.50 1.43E-002
+/gps/hist/point 3.60 1.36E-002
+/gps/hist/point 3.70 1.29E-002
+/gps/hist/point 3.80 1.23E-002
+/gps/hist/point 3.90 1.16E-002
+/gps/hist/point 4.00 1.09E-002
+/gps/hist/point 4.10 1.02E-002
+/gps/hist/point 4.20 9.68E-003
+/gps/hist/point 4.30 9.28E-003
+/gps/hist/point 4.40 8.98E-003
+/gps/hist/point 4.50 8.68E-003
+/gps/hist/point 4.60 8.45E-003
+/gps/hist/point 4.70 8.23E-003
+/gps/hist/point 4.80 8.02E-003
+/gps/hist/point 4.90 7.79E-003
+/gps/hist/point 5.00 7.53E-003
+/gps/hist/point 5.10 7.28E-003
+/gps/hist/point 5.20 7.01E-003
+/gps/hist/point 5.30 6.67E-003
+/gps/hist/point 5.40 6.36E-003
+/gps/hist/point 5.50 6.08E-003
+/gps/hist/point 5.60 5.75E-003
+/gps/hist/point 5.70 5.41E-003
+/gps/hist/point 5.80 5.12E-003
+/gps/hist/point 5.90 4.93E-003
+/gps/hist/point 6.00 4.78E-003
+/gps/hist/point 6.10 4.66E-003
+/gps/hist/point 6.20 4.55E-003
+/gps/hist/point 6.30 4.42E-003
+/gps/hist/point 6.40 4.25E-003
+/gps/hist/point 6.50 4.05E-003
+/gps/hist/point 6.60 3.82E-003
+/gps/hist/point 6.70 3.57E-003
+/gps/hist/point 6.80 3.33E-003
+/gps/hist/point 6.90 3.09E-003
+/gps/hist/point 7.00 2.84E-003
+/gps/hist/point 7.10 2.61E-003
+/gps/hist/point 7.20 2.37E-003
+/gps/hist/point 7.30 2.14E-003
+/gps/hist/point 7.40 1.92E-003
+/gps/hist/point 7.50 1.72E-003
+/gps/hist/point 7.60 1.54E-003
+/gps/hist/point 7.70 1.37E-003
+/gps/hist/point 7.80 1.24E-003
+/gps/hist/point 7.90 1.11E-003
+/gps/hist/point 8.00 9.78E-004
+/gps/hist/point 8.10 8.58E-004
+/gps/hist/point 8.20 7.46E-004
+/gps/hist/point 8.30 6.46E-004
+/gps/hist/point 8.40 5.67E-004
+/gps/hist/point 8.50 4.89E-004
+/gps/hist/point 8.60 4.15E-004
+/gps/hist/point 8.70 3.52E-004
+/gps/hist/point 8.80 3.12E-004
+/gps/hist/point 8.90 2.82E-004
+/gps/hist/point 9.00 2.56E-004
+/gps/hist/point 9.10 2.30E-004
+/gps/hist/point 9.20 2.06E-004
+/gps/hist/point 9.30 1.82E-004
+/gps/hist/point 9.40 1.62E-004
+/gps/hist/point 9.50 1.45E-004
+/gps/hist/point 9.60 1.30E-004
+/gps/hist/point 9.70 1.16E-004
+/gps/hist/point 9.80 1.01E-004
+/gps/hist/point 9.90 8.78E-005
+/gps/hist/point 10.00 7.47E-005
+/gps/arbint Lin
+
+/gps/pos/type Volume
+/gps/pos/shape Cylinder
+/gps/pos/centre 0 0 0 m
+/gps/pos/radius 1. m
+/gps/pos/halfz 1. m
+/gps/pos/confine Cryo_physic
+/gps/ang/type iso
+
+
+#/gps/pos/type Volume
+#/gps/pos/shape Para
+#/gps/pos/centre 0 0 0 mm
+#/gps/pos/halfx 6.60 m
+#/gps/pos/halfy 11.2 m
+#/gps/pos/halfz 6.70 m
+#/gps/pos/paralp 0 deg
+#/gps/pos/parphi 0 deg 
+#/gps/pos/parthe 0 deg
+#/gps/pos/confine Vacuum_physic
+#/gps/ang/type iso
+
+#start run
+/run/initialize
+/run/beamOn 10
+#388658

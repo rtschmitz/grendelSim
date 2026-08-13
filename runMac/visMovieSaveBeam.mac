@@ -1,0 +1,45 @@
+#quick way to get the muon sim to visualize
+/vis/viewer/zoomTo 3.5
+/vis/viewer/set/timeWindow/fadeFactor 1
+
+        /vis/viewer/set/timeWindow/startTime 0 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 2.0 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 4.0 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 6.0 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 8.0 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 10.0 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 12.5 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 15.0 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 17.5 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 20.0 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 22.5 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 25.0 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 27.5 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 30.0 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 35.0 ns 1 ns
+        /vis/viewer/save
+        /vis/viewer/set/timeWindow/startTime 40.0 ns 1 ns
+        /vis/viewer/save
+        # Then another view, the next time window, and a save...
+        # ...repeat a few more times
+        # Then try
+        /vis/viewer/interpolate
+
+#/vis/viewer/zoomTo 3
+#/vis/viewer/panTo -1
+
+

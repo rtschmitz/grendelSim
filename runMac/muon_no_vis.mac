@@ -1,0 +1,52 @@
+#quick way to get the muon sim to run
+
+#/vis/scene/create
+#/vis/open OGLIX 600x600-0+0
+#/vis/verbose errors
+#/vis/viewer/set/style surface
+#/vis/viewer/set/autoRefresh false
+#/vis/viewer/set/upVector 1 0 0
+#/vis/viewer/set/viewpointVector 0 1 0
+
+/run/initialize
+#/vis/drawVolume
+#/vis/viewer/flush
+#/gps/position 900 0 177.3 cm #bar4
+/gps/position 900 0 -8.5  cm  #midlayermid position in Z is -10 cm
+
+/gps/pos/type Plane
+/gps/pos/shape Rectangle
+/gps/pos/halfx 6 cm         #actually 2.5 cm + 3cm but I am giving some give
+/gps/pos/halfy 170 cm          #actually 162 but I am giving some give
+#/gps/pos/halfy 29.2 cm       #bar at angle
+/gps/pos/rot1 0 1 0
+/gps/pos/rot2 0 0 1
+/gps/direction -1 0 0
+
+/gps/particle mu-
+/gps/ene/type Mono
+/gps/ene/mono 4 GeV
+
+#/vis/scene/endOfEventAction accumulate 25
+#/tracking/storeTrajectory 1
+#/vis/scene/add/trajectories
+
+#/vis/modeling/trajectories/create/drawByParticleID
+#/vis/modeling/trajectories/drawByParticleID-0/set gamma green
+#/vis/modeling/trajectories/drawByParticleID-0/set neutron magenta
+#/vis/modeling/trajectories/drawByParticleID-0/set e+ blue
+#/vis/modeling/trajectories/drawByParticleID-0/set e- white
+#/vis/modeling/trajectories/drawByParticleID-0/set opticalphoton cyan
+#/vis/modeling/trajectories/drawByParticleID-0/set mu- red
+#/vis/modeling/trajectories/drawByParticleID-0/set proton yellow
+#/vis/modeling/trajectories/list
+
+#/vis/viewer/flush
+
+#/run/fname /media/ryan/Storage/computing/mqBarTestStand/data/Test/
+/run/fname /media/ryan/Storage/computing/mqFullSim/data/muonRockTest/muonLayerMid/
+/run/beamOn 200000
+
+
+
+

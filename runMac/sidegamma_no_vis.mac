@@ -1,0 +1,249 @@
+#quick way to get the muon sim to run
+
+#/process/em/fluo true
+#/process/em/auger true
+#/process/em/pixe true
+
+/run/initialize
+
+/gps/particle gamma
+#3mm from edge
+#/gps/position 10.5 0 50 mm
+#center
+#/gps/position 34.5 0 50 mm
+#side
+#/gps/position 67 0 0 mm
+#outside
+#/gps/position 228.5 0 0 mm
+#/gps/position 231.5 0 0 mm
+#/gps/position 251.5 0 0 mm
+
+#Slab Postitions
+#Center 5cm above
+#/gps/position -1260 0 -1250 mm
+
+#5cm in front of PMT, 5cm above
+#/gps/position -1260 105 -1000 mm
+
+#Split between PMTs, 5cm above/in front
+/gps/position -1260 0 -1000 mm
+
+
+#Mono
+#/gps/ene/type Mono
+#/gps/ene/mono 100 keV
+
+#Na22
+#/gps/ene/type Mono
+#/gps/ene/mono 511 keV
+
+#Mn-54
+#/gps/ene/type Mono
+#/gps/ene/mono 835 keV
+
+
+### if you want to use sources, comment the /gpe/ene lines above, then ###
+### uncomment these two lines below and then uncomment the /gps/hist/point under your source of choice ###
+#/gps/ene/type User
+#/gps/hist/type energy
+
+#Unif
+#/gps/hist/point 0 0
+#/gps/hist/point 0.001 100
+#/gps/hist/point 0.800 100
+#/gps/hist/point 0.801 0
+
+#Cd109
+#/gps/hist/point 0 0
+#/gps/hist/point 0.022095 0
+#/gps/hist/point 0.022100 84
+#/gps/hist/point 0.022105 0
+#/gps/hist/point 0.025005 0
+#/gps/hist/point 0.025010 17
+#/gps/hist/point 0.025015 0
+#/gps/hist/point 0.088035 0
+#/gps/hist/point 0.088040 4
+#/gps/hist/point 0.088045 0
+
+#Cd109 update x100 (doubled 88keV)
+#/gps/hist/point 0 0
+#/gps/hist/point 0.022095 0
+#/gps/hist/point 0.022100 84
+#/gps/hist/point 0.022105 0
+#/gps/hist/point 0.025005 0
+#/gps/hist/point 0.025010 17
+#/gps/hist/point 0.025015 0
+#/gps/hist/point 0.088035 0
+#/gps/hist/point 0.088040 8
+#/gps/hist/point 0.088045 0
+
+######################################
+
+#Ba133
+#31 99
+#356 62
+#81 34
+#303 18
+
+#/gps/hist/point 0 0
+#/gps/hist/point 0.030615 0
+#/gps/hist/point 0.030625 34.9
+#/gps/hist/point 0.030635 0
+#/gps/hist/point 0.030963 0
+#/gps/hist/point 0.030973 64.5
+#/gps/hist/point 0.030683 0
+#/gps/hist/point 0.053151 0
+#/gps/hist/point 0.053161 12.2
+#/gps/hist/point 0.053171 0
+#/gps/hist/point 0.080987 0
+#/gps/hist/point 0.080997 34.1
+#/gps/hist/point 0.081007 0
+#/gps/hist/point 0.302843 0
+#/gps/hist/point 0.302853 18.3
+#/gps/hist/point 0.302863 0
+#/gps/hist/point 0.356007 0
+#/gps/hist/point 0.356017 62
+#/gps/hist/point 0.356027 0
+
+######################################
+
+#Co57
+#122 86
+#136 11
+#14 9
+#/gps/hist/point 0 0
+#/gps/hist/point 0.014403 0
+#/gps/hist/point 0.014413 9.2
+#/gps/hist/point 0.014423 0
+#/gps/hist/point 0.122051 0
+#/gps/hist/point 0.122061 85.6
+#/gps/hist/point 0.122071 0
+#/gps/hist/point 0.136464 0
+#/gps/hist/point 0.136474 10.7
+#/gps/hist/point 0.136484 0
+
+######################################
+
+#Co57 x10
+#122 86
+#136 11
+#14 9
+#/gps/hist/point 0 0
+#/gps/hist/point 0.014403 0
+#/gps/hist/point 0.014413 18.4
+#/gps/hist/point 0.014423 0
+#/gps/hist/point 0.122051 0
+#/gps/hist/point 0.122061 85.6
+#/gps/hist/point 0.122071 0
+#/gps/hist/point 0.136464 0
+#/gps/hist/point 0.136474 21.4
+#/gps/hist/point 0.136484 0
+
+######################################
+
+#Am241 x10
+#59.5 36
+#14 15
+#18 9
+#/gps/hist/point 0 0
+#/gps/hist/point 0.013936 0
+#/gps/hist/point 0.013946 21.4
+#/gps/hist/point 0.013956 0
+#/gps/hist/point 0.016806 0
+#/gps/hist/point 0.016816 5
+#/gps/hist/point 0.016826 0
+#/gps/hist/point 0.017051 0
+#/gps/hist/point 0.017061 3
+#/gps/hist/point 0.017071 0
+#/gps/hist/point 0.017741 0
+#/gps/hist/point 0.017751 11.4
+#/gps/hist/point 0.017761 0
+#/gps/hist/point 0.017982 0
+#/gps/hist/point 0.017992 2.8
+#/gps/hist/point 0.018002 0
+#/gps/hist/point 0.020774 0
+#/gps/hist/point 0.020784 2.8
+#/gps/hist/point 0.020794 0
+#/gps/hist/point 0.026335 0
+#/gps/hist/point 0.026345 4.8
+#/gps/hist/point 0.026355 0
+#/gps/hist/point 0.059531 0
+#/gps/hist/point 0.059541 35.9
+#/gps/hist/point 0.059551 0
+
+######################################
+
+#Am241
+#59.5 36
+#14 15
+#18 9
+#/gps/hist/point 0 0
+#/gps/hist/point 0.013936 0
+#/gps/hist/point 0.013946 10.7
+#/gps/hist/point 0.013956 0
+#/gps/hist/point 0.016806 0
+#/gps/hist/point 0.016816 2.5
+#/gps/hist/point 0.016826 0
+#/gps/hist/point 0.017051 0
+#/gps/hist/point 0.017061 1.5
+#/gps/hist/point 0.017071 0
+#/gps/hist/point 0.017741 0
+#/gps/hist/point 0.017751 5.7
+#/gps/hist/point 0.017761 0
+#/gps/hist/point 0.017982 0
+#/gps/hist/point 0.017992 1.4
+#/gps/hist/point 0.018002 0
+#/gps/hist/point 0.020774 0
+#/gps/hist/point 0.020784 1.4
+#/gps/hist/point 0.020794 0
+#/gps/hist/point 0.026335 0
+#/gps/hist/point 0.026345 2.4
+#/gps/hist/point 0.026355 0
+#/gps/hist/point 0.059531 0
+#/gps/hist/point 0.059541 35.9
+#/gps/hist/point 0.059551 0
+
+######################################
+
+#Eu152
+/gps/hist/point 0 0
+/gps/hist/point 0.28576 0
+/gps/hist/point 0.28586 122
+/gps/hist/point 0.28596 0
+/gps/hist/point 0.26440 0
+/gps/hist/point 0.26540 344
+/gps/hist/point 0.26640 0
+/gps/hist/point 0.20995 0
+/gps/hist/point 0.21005 1408
+/gps/hist/point 0.21015 0
+/gps/hist/point 0.14595 0
+/gps/hist/point 0.14605 964
+/gps/hist/point 0.14615 0
+/gps/hist/point 0.13634 0
+/gps/hist/point 0.13644 1112
+/gps/hist/point 0.13654 0
+/gps/hist/point 0.12932 0
+/gps/hist/point 0.12942 779
+/gps/hist/point 0.12952 0
+/gps/hist/point 0.10207 0
+/gps/hist/point 0.10207 1086
+/gps/hist/point 0.10207 0
+/gps/hist/point 0.07583 0
+/gps/hist/point 0.07583 245
+/gps/hist/point 0.07583 0
+
+
+######################################
+
+#switch between isotropic and pencil beam sources here
+#/gps/ang/type iso
+/gps/direction -1 0 0
+
+
+
+#/gps/number 10
+#/run/fname /media/ryan/Storage/computing/beamRadSim/data/60keV1MeVMixed_mixedAbsAuAgScint_5stack/
+#/run/fname /media/ryan/Storage/computing/beamRadSim/data/electron/
+#/run/beamOn 1000000
+/run/beamOn 10000
+/vis/viewer/save

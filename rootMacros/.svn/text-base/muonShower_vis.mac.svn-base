@@ -1,0 +1,103 @@
+# $Id: run2.mac,v 1.2 2002/12/16 16:31:42 maire Exp $
+#
+# Macro file for "detectorNeutrons.cc"
+# 
+# can be run in batch, without graphic
+# or interactively: Idle> /control/execute run2.mac
+#
+
+###################################################
+#Setting verbose level
+#/control/verbose 0
+/run/verbose 0
+/tracking/verbose 0
+#/EURECA/AnalysisManager/Verbose 0
+#/EURECA/Physics/Verbose 0
+
+
+
+#Setting display settings
+#/vis/open HepRepFile
+#/vis/open OGLIX 600x600-0+0
+#/vis/open OGLIXm
+/vis/open DAWNFILE
+#/vis/open RayTracer
+
+#/vis/scene/create
+#/vis/scene/add/volume waterTank_physic
+#/vis/scene/add/ghosts all
+#/vis/viewer/set/style surface
+#/vis/geometry/set/forceLineSegmentsPerCircle all 0 100		    
+/vis/drawVolume
+
+/vis/viewer/set/viewpointThetaPhi 45 90 deg
+/vis/viewer/zoom 10
+
+/vis/modeling/trajectories/create/drawByParticleID
+/vis/modeling/trajectories/drawByParticleID-0/set gamma yellow
+/vis/modeling/trajectories/drawByParticleID-0/set neutron green
+/vis/modeling/trajectories/drawByParticleID-0/set e+ black
+/vis/modeling/trajectories/drawByParticleID-0/set e- black
+/vis/modeling/trajectories/drawByParticleID-0/set opticalphoton cyan
+/vis/modeling/trajectories/drawByParticleID-0/set mu- green
+/vis/modeling/trajectories/drawByParticleID-0/set proton black
+/vis/modeling/trajectories/list
+
+
+#/vis/filtering/trajectories/create/attributeFilter
+#/vis/filtering/trajectories/attributeFilter-0/setAttribute IMag
+#/vis/filtering/trajectories/attributeFilter-0/addInterval 2 keV 200 GeV
+#/vis/filtering/trajectories/attributeFilter-0/addInterval 3 eV 3.001 eV
+
+
+
+/vis/filtering/trajectories/create/attributeFilter
+/vis/filtering/trajectories/attributeFilter-0/setAttribute IMag
+/vis/filtering/trajectories/attributeFilter-0/addInterval 19 GeV 201 GeV
+/vis/filtering/trajectories/attributeFilter-0/addInterval 3 eV 3.001 eV
+#/vis/filtering/trajectories/create/particleFilter
+#/vis/filtering/trajectories/particleFilter-0/add neutron
+#/vis/filtering/trajectories/particleFilter-0/add mu-
+#/vis/filtering/trajectories/particleFilter-0/add opticalphoton
+
+
+
+#acc. to ApplicationDeveloperHandbook red = x-axis; green = y-axis; blue = z-axis
+/vis/scene/add/axes 0 -5 0 1 m
+
+/vis/scene/add/trajectories 100
+/tracking/storeTrajectory 1
+#/vis/scene/add/trajectories 100
+#/vis/scene/add/trajectories rich
+/vis/scene/endOfEventAction accumulate 1000
+
+#/vis/viewer/addCutawayPlane 60 0 0 cm 1 0 0
+/vis/viewer/flush
+#/vis/ogl/printEPS
+
+
+###################################################
+#Set GPS properties
+/EURECA/PGA/UseMuonGenerator true
+/EURECA/PGA/SetMuonSource 1
+/EURECA/PGA/UseGeantinos false
+#Use the MUSUN data
+#/EURECA/InterfaceToMUSUN/Verbose 1
+#/EURECA/InterfaceToMUSUN/PathToMUSUNFile /kalinka/home/kluck/MUSUN/muons_lsm_test2.dat
+
+#Use Markus Horns muon generator
+/EURECA/MuonGeneratorAccToMH/Verbose 1
+/EURECA/MuonGeneratorAccToMH/PathToFrejusFile /kalinka/home/heuermann/workspace/waterTank/frejus.dat
+/EURECA/MuonGeneratorAccToMH/NbOfZenithBins 90
+/EURECA/MuonGeneratorAccToMH/NbOfAzimuthBins 360
+/EURECA/MuonGeneratorAccToMH/NbOfEnergyBins 100
+/EURECA/MuonGeneratorAccToMH/EnergyMin 20 GeV
+/EURECA/MuonGeneratorAccToMH/EnergyMax 200 GeV
+/EURECA/MuonGeneratorAccToMH/RadiusSphere 10 m
+/EURECA/MuonGeneratorAccToMH/RadiusHemisphere 30 m
+/EURECA/MuonGeneratorAccToMH/BuildLookUpTable						    
+
+##################################################
+#start run
+/run/initialize
+/run/beamOn 1

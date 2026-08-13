@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "BeamHits.C": "cpp",
+        "BarParticleTypeHits.C": "cpp"
+    }
+}
