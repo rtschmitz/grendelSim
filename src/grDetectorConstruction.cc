@@ -702,48 +702,45 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                               false,
                               0.0);
 
-    makeAndPlaceLayerSegments("gargoyle_si_layer1",
-                              "gargoyle_si_layer1_phys",
-                              upperSegments,
-                              wallGap,
-                              trackerSublayerThickness,
-                              matPlScin,
-                              G4Colour(0.1, 0.8, 0.1, 0.75),
-                              1000,
-                              true,
-                              0.0);
+    auto placeTrackerStation = [&](G4int layerIndex,
+                                   G4double gapFromWallTracker,
+                                   G4int phiCopyBase,
+                                   const G4Colour& phiColour,
+                                   const G4Colour& longitudinalColour) {
+        std::ostringstream baseName;
+        std::ostringstream physBaseName;
+        baseName << "gargoyle_si_layer" << layerIndex;
+        physBaseName << "gargoyle_si_layer" << layerIndex << "_phys";
+        const G4double stationOffset = (layerIndex == 1)
+                ? wallGap
+                : wallGap + trackerThickness + gapFromWallTracker;
 
-    makeAndPlaceLongitudinalSegments("gargoyle_si_layer1_z",
-                                     "gargoyle_si_layer1_z_phys",
-                                     upperSegments,
-                                     wallGap + trackerSublayerThickness
-                                             + trackerSublayerGap,
-                                     trackerSublayerThickness,
-                                     matPlScin,
-                                     G4Colour(0.1, 0.55, 0.95, 0.75),
-                                     trackerSegmentWidth);
+        makeAndPlaceLayerSegments(baseName.str(), physBaseName.str(),
+                                  upperSegments, stationOffset,
+                                  trackerSublayerThickness, matPlScin,
+                                  phiColour, phiCopyBase, true, 0.0);
 
-    makeAndPlaceLayerSegments("gargoyle_si_layer2",
-                              "gargoyle_si_layer2_phys",
-                              upperSegments,
-                              wallGap + trackerThickness + trackerLayerGap,
-                              trackerSublayerThickness,
-                              matPlScin,
-                              G4Colour(0.9, 0.9, 0.1, 0.75),
-                              2000,
-                              true,
-                              0.0);
+        makeAndPlaceLongitudinalSegments(baseName.str() + "_z",
+                                         baseName.str() + "_z_phys",
+                                         upperSegments,
+                                         stationOffset + trackerSublayerThickness
+                                                 + trackerSublayerGap,
+                                         trackerSublayerThickness, matPlScin,
+                                         longitudinalColour, trackerSegmentWidth);
+    };
 
-    makeAndPlaceLongitudinalSegments("gargoyle_si_layer2_z",
-                                     "gargoyle_si_layer2_z_phys",
-                                     upperSegments,
-                                     wallGap + trackerThickness + trackerLayerGap
-                                             + trackerSublayerThickness
-                                             + trackerSublayerGap,
-                                     trackerSublayerThickness,
-                                     matPlScin,
-                                     G4Colour(0.95, 0.45, 0.1, 0.75),
-                                     trackerSegmentWidth);
+    // Preserve the original layer 1 (wall) and layer 2 (24 cm) identifiers.
+    // New station identifiers follow in otherwise-unused copy-number ranges.
+    placeTrackerStation(1,  0.0 * cm, 1000,
+            G4Colour(0.1, 0.8, 0.1, 0.75), G4Colour(0.1, 0.55, 0.95, 0.75));
+    placeTrackerStation(3,  8.0 * cm, 3000,
+            G4Colour(0.2, 0.85, 0.5, 0.75), G4Colour(0.2, 0.65, 0.95, 0.75));
+    placeTrackerStation(4, 16.0 * cm, 4000,
+            G4Colour(0.65, 0.85, 0.2, 0.75), G4Colour(0.6, 0.45, 0.95, 0.75));
+    placeTrackerStation(2, trackerLayerGap, 2000,
+            G4Colour(0.9, 0.9, 0.1, 0.75), G4Colour(0.95, 0.45, 0.1, 0.75));
+    placeTrackerStation(5, 32.0 * cm, 5000,
+            G4Colour(0.95, 0.55, 0.2, 0.75), G4Colour(0.95, 0.25, 0.55, 0.75));
 
     // Reuse the existing Scint_SD/grScintSD infrastructure for all active layers.
     G4SDManager* SDman = G4SDManager::GetSDMpointer();
@@ -759,8 +756,8 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         activeLayerLogics[i]->SetSensitiveDetector(myScintSD);
     }
 
-    // Count the lower scintillator shell plus the four tracker sub-layers.
-    this->SetNLayer(5);
+    // Count the lower scintillator shell plus ten tracker sub-layers.
+    this->SetNLayer(11);
     this->SetNBarPerLayer(1);
 
     if (verbose >= 0) {
@@ -776,8 +773,9 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                << G4BestUnit(trackerSublayerGap, "Length") << G4endl;
         G4cout << "  tracker total envelope thickness: "
                << G4BestUnit(trackerThickness, "Length") << G4endl;
-        G4cout << "  tracker edge-to-edge inter-layer gap: "
+        G4cout << "  original tracker edge-to-edge gap: "
                << G4BestUnit(trackerLayerGap, "Length") << G4endl;
+        G4cout << "  tracker station edge gaps from wall tracker: 8 cm, 16 cm, 24 cm, 32 cm" << G4endl;
         G4cout << "  tracker segmentation: 1 cm phi strips plus 1 cm longitudinal strips" << G4endl;
         G4cout << "  active logical volumes: " << activeLayerLogics.size() << G4endl;
         G4cout << "  active physical segments: " << activePhysicalVolumeCount << G4endl;

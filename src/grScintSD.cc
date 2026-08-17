@@ -33,8 +33,14 @@ G4bool IsGargoyleActiveVolume(const G4String& volumeName)
   return volumeName.contains("gargoyle_scint_phys") ||
          volumeName.contains("gargoyle_si_layer1_phys") ||
          volumeName.contains("gargoyle_si_layer2_phys") ||
+         volumeName.contains("gargoyle_si_layer3_phys") ||
+         volumeName.contains("gargoyle_si_layer4_phys") ||
+         volumeName.contains("gargoyle_si_layer5_phys") ||
          volumeName.contains("gargoyle_si_layer1_z_phys") ||
-         volumeName.contains("gargoyle_si_layer2_z_phys");
+         volumeName.contains("gargoyle_si_layer2_z_phys") ||
+         volumeName.contains("gargoyle_si_layer3_z_phys") ||
+         volumeName.contains("gargoyle_si_layer4_z_phys") ||
+         volumeName.contains("gargoyle_si_layer5_z_phys");
 }
 
 G4int GargoyleLayerBase(const G4String& volumeName)
@@ -46,8 +52,14 @@ G4int GargoyleLayerBase(const G4String& volumeName)
   if (volumeName.contains("gargoyle_scint_phys"))    return 0;
   if (volumeName.contains("gargoyle_si_layer1_z_phys")) return 10000;
   if (volumeName.contains("gargoyle_si_layer2_z_phys")) return 20000;
+  if (volumeName.contains("gargoyle_si_layer3_z_phys")) return 30000;
+  if (volumeName.contains("gargoyle_si_layer4_z_phys")) return 40000;
+  if (volumeName.contains("gargoyle_si_layer5_z_phys")) return 50000;
   if (volumeName.contains("gargoyle_si_layer1_phys")) return 1000;
   if (volumeName.contains("gargoyle_si_layer2_phys")) return 2000;
+  if (volumeName.contains("gargoyle_si_layer3_phys")) return 3000;
+  if (volumeName.contains("gargoyle_si_layer4_phys")) return 4000;
+  if (volumeName.contains("gargoyle_si_layer5_phys")) return 5000;
   return -1;
 }
 
