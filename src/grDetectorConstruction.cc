@@ -716,7 +716,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         baseName << "gargoyle_scint_wall_extension_layer" << extensionIndex;
         physBaseName << "gargoyle_scint_phys_wall_extension_layer" << extensionIndex;
         makeAndPlaceLayerSegments(baseName.str(), physBaseName.str(),
-                                  wallSegments, layerOffset, scintThickness,
+                                  wallSegments, layerOffset, trackerThickness,
                                   matPlScin, colour, copyBase, false, 0.0);
     };
 
@@ -797,7 +797,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                << G4BestUnit(trackerThickness, "Length") << G4endl;
         G4cout << "  original tracker edge-to-edge gap: "
                << G4BestUnit(trackerLayerGap, "Length") << G4endl;
-        G4cout << "  inner tracker lower-wall veto extensions: 12 cm, 24 cm, 36 cm" << G4endl;
+        G4cout << "  inner tracker lower-wall veto extensions: 12 cm, 24 cm, 36 cm; 3.1 cm thick" << G4endl;
         G4cout << "  tracker station edge gaps from wall tracker: 12 cm, 24 cm, 36 cm" << G4endl;
         G4cout << "  tracker segmentation: 1 cm phi strips plus 1 cm longitudinal strips" << G4endl;
         G4cout << "  active logical volumes: " << activeLayerLogics.size() << G4endl;
