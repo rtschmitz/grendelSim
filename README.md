@@ -80,9 +80,9 @@ Beam particle type, event offset, rescaling, and four-vector path are configured
 
 ## Tracker geometry
 
-The upper tunnel tracker consists of two tracker stations. The wall-adjacent station begins 1 mm from the tunnel wall, preserving the previous wall clearance. Each station contains a 1.5 cm phi-segmented scintillator plane, a 1 mm air gap, and a 1.5 cm longitudinally segmented scintillator plane, for a 3.1 cm envelope. The clear distance from the inward face of the wall station to the wall-facing face of the second station is exactly 24 cm. Both orientations have a nominal 1 cm channel pitch; the longitudinal planes use native Geant4 replicas for efficient navigation.
+The upper tunnel tracker consists of five tracker stations. The wall-adjacent station begins 1 mm from the tunnel wall, preserving the previous wall clearance. The other stations have edge-to-edge clear distances of 8 cm, 16 cm, 24 cm, and 32 cm from the inward face of the wall station. Each station contains a 1.5 cm phi-segmented scintillator plane, a 1 mm air gap, and a 1.5 cm longitudinally segmented scintillator plane, for a 3.1 cm envelope. Both orientations have a nominal 1 cm channel pitch; the longitudinal planes use native Geant4 replicas for efficient navigation.
 
-Sensitive-hit copy numbers preserve the original phi planes: `1000 + phiBin` for the wall station and `2000 + phiBin` for the inward station. The new longitudinal planes use `10000 + zBin` and `20000 + zBin`, respectively. Lower tunnel scintillator pieces remain copy numbers 0--2.
+Sensitive-hit copy numbers preserve the original stations: `1000 + phiBin` and `10000 + zBin` for the wall station, and `2000 + phiBin` and `20000 + zBin` for the 24 cm station. The new 8 cm, 16 cm, and 32 cm stations use layer prefixes 3, 4, and 5 respectively: phi bases 3000, 4000, and 5000, and longitudinal bases 30000, 40000, and 50000. Lower tunnel scintillator pieces remain copy numbers 0--2.
 
 ## Output
 
