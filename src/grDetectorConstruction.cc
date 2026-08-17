@@ -72,6 +72,7 @@
 #include "G4LogicalVolume.hh"
 
 #include "G4PVPlacement.hh"
+#include "G4PVReplica.hh"
 #include "G4VPVParameterisation.hh"
 #include "G4PVParameterised.hh"
 #include "globals.hh"
@@ -433,6 +434,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     };
 
     std::vector<G4LogicalVolume*> activeLayerLogics;
+    std::size_t activePhysicalVolumeCount = 0;
 
     auto makeAlternateColour = [](const G4Colour& c) -> G4Colour {
         // Blend odd-numbered mitered strip volumes slightly toward white while
@@ -540,17 +542,76 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                     false);
 
             activeLayerLogics.push_back(stripLogic);
+            ++activePhysicalVolumeCount;
         }
     };
 
 
+    auto makeAndPlaceLongitudinalSegments = [&](const G4String& baseName,
+                                                const G4String& physBaseName,
+                                                const std::vector<Segment>& segments,
+                                                G4double wallOffset,
+                                                G4double thickness,
+                                                G4Material* material,
+                                                const G4Colour& colour,
+                                                G4double segmentWidth) {
+        // A continuous upper-wall/arch shell, sliced along z, makes strips
+        // orthogonal to the existing phi-segmented strips.
+        std::vector<G4TwoVector> shellProfile;
+        shellProfile.reserve(2 * (segments.size() + 1));
+        shellProfile.push_back(offsetStartPoint(segments, 0, wallOffset));
+        for (std::size_t i = 0; i < segments.size(); ++i) {
+            shellProfile.push_back(offsetEndPoint(segments, i, wallOffset));
+        }
+
+        const G4double outerOffset = wallOffset + thickness;
+        shellProfile.push_back(offsetEndPoint(segments, segments.size() - 1, outerOffset));
+        for (std::size_t i = segments.size(); i > 0; --i) {
+            shellProfile.push_back(offsetStartPoint(segments, i - 1, outerOffset));
+        }
+
+        const G4int segmentCount = static_cast<G4int>(
+                std::ceil(tunnelLength / segmentWidth));
+        const G4double actualWidth = tunnelLength / segmentCount;
+        G4VSolid* envelopeSolid = makeExtrudedSolid(baseName + "_envelope_solid",
+                                                    shellProfile, tunnelHalfZ);
+        G4LogicalVolume* envelopeLogic = new G4LogicalVolume(
+                envelopeSolid, worldMaterial, baseName + "_envelope_logic", 0, 0, 0);
+        G4VisAttributes* envelopeVis = new G4VisAttributes();
+        envelopeVis->SetVisibility(false);
+        envelopeLogic->SetVisAttributes(envelopeVis);
+        new G4PVPlacement(0, G4ThreeVector(), envelopeLogic,
+                baseName + "_envelope_phys", logicWorld, false, 0, false);
+
+        G4VSolid* stripSolid = makeExtrudedSolid(baseName + "_solid",
+                                                 shellProfile,
+                                                 0.5 * actualWidth);
+        G4LogicalVolume* stripLogic = new G4LogicalVolume(stripSolid, material,
+                                                          baseName + "_logic",
+                                                          0, 0, 0);
+        G4VisAttributes* vis = new G4VisAttributes(colour);
+        vis->SetVisibility(true);
+        vis->SetForceSolid(true);
+        vis->SetForceAuxEdgeVisible(true);
+        stripLogic->SetVisAttributes(vis);
+
+        new G4PVReplica(physBaseName, stripLogic, envelopeLogic, kZAxis,
+                        segmentCount, actualWidth);
+        activePhysicalVolumeCount += segmentCount;
+        activeLayerLogics.push_back(stripLogic);
+    };
+
     const G4double wallGap          = 0.1 * cm;
     const G4double scintThickness   = 2.0 * cm;
-    const G4double trackerThickness = 2.0 * cm;
+    const G4double trackerSublayerThickness = 1.5 * cm;
+    const G4double trackerSublayerGap = 1.0 * mm;
+    const G4double trackerThickness = 2.0 * trackerSublayerThickness
+                                      + trackerSublayerGap;
+    const G4double trackerSegmentWidth = 1.0 * cm;
 
-    // There are two total tracker layers.  The tracker layers are now mitered
-    // scintillator, not staggered/offset silicon.  Preserve the current 24 cm
-    // air gap between the two tracker layers.
+    // Each tracker contains a phi-segmented plane and an orthogonal,
+    // z-segmented plane separated by 1 mm of air.  trackerLayerGap is measured
+    // edge-to-edge between the complete 3.1 cm tracker envelopes.
     const G4double trackerLayerGap  = 24.0 * cm;
 
     // The scintillator is made from three rectangular fabricated pieces:
@@ -645,23 +706,44 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                               "gargoyle_si_layer1_phys",
                               upperSegments,
                               wallGap,
-                              trackerThickness,
+                              trackerSublayerThickness,
                               matPlScin,
                               G4Colour(0.1, 0.8, 0.1, 0.75),
                               1000,
                               true,
                               0.0);
 
+    makeAndPlaceLongitudinalSegments("gargoyle_si_layer1_z",
+                                     "gargoyle_si_layer1_z_phys",
+                                     upperSegments,
+                                     wallGap + trackerSublayerThickness
+                                             + trackerSublayerGap,
+                                     trackerSublayerThickness,
+                                     matPlScin,
+                                     G4Colour(0.1, 0.55, 0.95, 0.75),
+                                     trackerSegmentWidth);
+
     makeAndPlaceLayerSegments("gargoyle_si_layer2",
                               "gargoyle_si_layer2_phys",
                               upperSegments,
                               wallGap + trackerThickness + trackerLayerGap,
-                              trackerThickness,
+                              trackerSublayerThickness,
                               matPlScin,
                               G4Colour(0.9, 0.9, 0.1, 0.75),
                               2000,
                               true,
                               0.0);
+
+    makeAndPlaceLongitudinalSegments("gargoyle_si_layer2_z",
+                                     "gargoyle_si_layer2_z_phys",
+                                     upperSegments,
+                                     wallGap + trackerThickness + trackerLayerGap
+                                             + trackerSublayerThickness
+                                             + trackerSublayerGap,
+                                     trackerSublayerThickness,
+                                     matPlScin,
+                                     G4Colour(0.95, 0.45, 0.1, 0.75),
+                                     trackerSegmentWidth);
 
     // Reuse the existing Scint_SD/grScintSD infrastructure for all active layers.
     G4SDManager* SDman = G4SDManager::GetSDMpointer();
@@ -677,8 +759,8 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         activeLayerLogics[i]->SetSensitiveDetector(myScintSD);
     }
 
-    // Treat this as three active layers with one large channel per layer.
-    this->SetNLayer(3);
+    // Count the lower scintillator shell plus the four tracker sub-layers.
+    this->SetNLayer(5);
     this->SetNBarPerLayer(1);
 
     if (verbose >= 0) {
@@ -688,11 +770,17 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         G4cout << "  tunnel height: " << G4BestUnit(tunnelBeta, "Length") << G4endl;
         G4cout << "  wall midpoint transition y: " << G4BestUnit(midWallY, "Length") << G4endl;
         G4cout << "  scintillator thickness: " << G4BestUnit(scintThickness, "Length") << G4endl;
-        G4cout << "  tracker scintillator thickness: " << G4BestUnit(trackerThickness, "Length") << G4endl;
-        G4cout << "  tracker inter-layer gap: " << G4BestUnit(trackerLayerGap, "Length") << G4endl;
-        G4cout << "  tracker geometry: mitered scintillator strips" << G4endl;
-        G4cout << "  tracker visualization: alternating odd/even strip colours" << G4endl;
-        G4cout << "  active physical layer segments: " << activeLayerLogics.size() << G4endl;
+        G4cout << "  tracker sub-layer scintillator thickness: "
+               << G4BestUnit(trackerSublayerThickness, "Length") << G4endl;
+        G4cout << "  tracker intra-layer air gap: "
+               << G4BestUnit(trackerSublayerGap, "Length") << G4endl;
+        G4cout << "  tracker total envelope thickness: "
+               << G4BestUnit(trackerThickness, "Length") << G4endl;
+        G4cout << "  tracker edge-to-edge inter-layer gap: "
+               << G4BestUnit(trackerLayerGap, "Length") << G4endl;
+        G4cout << "  tracker segmentation: 1 cm phi strips plus 1 cm longitudinal strips" << G4endl;
+        G4cout << "  active logical volumes: " << activeLayerLogics.size() << G4endl;
+        G4cout << "  active physical segments: " << activePhysicalVolumeCount << G4endl;
     }
 
     return physicWorld;

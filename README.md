@@ -80,6 +80,12 @@ cd build
 
 Beam particle type, event offset, rescaling, and four-vector path are configured by `inputData/config/particles.ini`.
 
+## Tracker geometry
+
+The upper tunnel tracker consists of two tracker stations. The wall-adjacent station begins 1 mm from the tunnel wall, preserving the previous wall clearance. Each station contains a 1.5 cm phi-segmented scintillator plane, a 1 mm air gap, and a 1.5 cm longitudinally segmented scintillator plane, for a 3.1 cm envelope. The clear distance from the inward face of the wall station to the wall-facing face of the second station is exactly 24 cm. Both orientations have a nominal 1 cm channel pitch; the longitudinal planes use native Geant4 replicas for efficient navigation.
+
+Sensitive-hit copy numbers preserve the original phi planes: `1000 + phiBin` for the wall station and `2000 + phiBin` for the inward station. The new longitudinal planes use `10000 + zBin` and `20000 + zBin`, respectively. Lower tunnel scintillator pieces remain copy numbers 0--2.
+
 ## Output
 
 Both workflows write a seed-tagged `Sim_<id>grendelSim.root` file in the build directory by default; `/run/fname` replaces that prefix. The `Events` tree uses standalone schema version 3 with one row per simulated event. No GRENDEL headers, shared library, ROOT dictionary, PCM, or rootmap is needed to read it.

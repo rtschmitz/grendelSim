@@ -32,7 +32,9 @@ G4bool IsGargoyleActiveVolume(const G4String& volumeName)
 {
   return volumeName.contains("gargoyle_scint_phys") ||
          volumeName.contains("gargoyle_si_layer1_phys") ||
-         volumeName.contains("gargoyle_si_layer2_phys");
+         volumeName.contains("gargoyle_si_layer2_phys") ||
+         volumeName.contains("gargoyle_si_layer1_z_phys") ||
+         volumeName.contains("gargoyle_si_layer2_z_phys");
 }
 
 G4int GargoyleLayerBase(const G4String& volumeName)
@@ -42,6 +44,8 @@ G4int GargoyleLayerBase(const G4String& volumeName)
   // copy-number bases, but this fallback also protects us if the placement copy
   // numbers are later changed back to local 0..N segment IDs.
   if (volumeName.contains("gargoyle_scint_phys"))    return 0;
+  if (volumeName.contains("gargoyle_si_layer1_z_phys")) return 10000;
+  if (volumeName.contains("gargoyle_si_layer2_z_phys")) return 20000;
   if (volumeName.contains("gargoyle_si_layer1_phys")) return 1000;
   if (volumeName.contains("gargoyle_si_layer2_phys")) return 2000;
   return -1;
@@ -64,9 +68,9 @@ G4int GetGargoyleCopyNo(const G4Step* aStep, G4bool usePostPoint)
   const G4int layerBase = GargoyleLayerBase(volumeName);
   const G4int localCopyNo = stepPoint->GetTouchable()->GetCopyNumber(); // depth 0 only
 
-  // In the generated GARGOYLE geometry, the placement copy numbers are already
-  // 0+i, 1000+i, and 2000+i.  If that is true, preserve them exactly.
-  if (localCopyNo >= layerBase && localCopyNo < layerBase + 1000) {
+  // In the generated GARGOYLE geometry, placement copy numbers are already
+  // global within their layer-specific ranges; preserve them exactly.
+  if (localCopyNo >= layerBase) {
     return localCopyNo;
   }
 
