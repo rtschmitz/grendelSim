@@ -733,10 +733,8 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     // New station identifiers follow in otherwise-unused copy-number ranges.
     placeTrackerStation(1,  0.0 * cm, 1000,
             G4Colour(0.1, 0.8, 0.1, 0.75), G4Colour(0.1, 0.55, 0.95, 0.75));
-    placeTrackerStation(3,  8.0 * cm, 3000,
+    placeTrackerStation(3, 12.0 * cm, 3000,
             G4Colour(0.2, 0.85, 0.5, 0.75), G4Colour(0.2, 0.65, 0.95, 0.75));
-    placeTrackerStation(4, 16.0 * cm, 4000,
-            G4Colour(0.65, 0.85, 0.2, 0.75), G4Colour(0.6, 0.45, 0.95, 0.75));
     placeTrackerStation(2, trackerLayerGap, 2000,
             G4Colour(0.9, 0.9, 0.1, 0.75), G4Colour(0.95, 0.45, 0.1, 0.75));
     placeTrackerStation(5, 32.0 * cm, 5000,
@@ -756,8 +754,8 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         activeLayerLogics[i]->SetSensitiveDetector(myScintSD);
     }
 
-    // Count the lower scintillator shell plus ten tracker sub-layers.
-    this->SetNLayer(11);
+    // Count the lower scintillator shell plus eight tracker sub-layers.
+    this->SetNLayer(9);
     this->SetNBarPerLayer(1);
 
     if (verbose >= 0) {
@@ -775,7 +773,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                << G4BestUnit(trackerThickness, "Length") << G4endl;
         G4cout << "  original tracker edge-to-edge gap: "
                << G4BestUnit(trackerLayerGap, "Length") << G4endl;
-        G4cout << "  tracker station edge gaps from wall tracker: 8 cm, 16 cm, 24 cm, 32 cm" << G4endl;
+        G4cout << "  tracker station edge gaps from wall tracker: 12 cm, 24 cm, 32 cm" << G4endl;
         G4cout << "  tracker segmentation: 1 cm phi strips plus 1 cm longitudinal strips" << G4endl;
         G4cout << "  active logical volumes: " << activeLayerLogics.size() << G4endl;
         G4cout << "  active physical segments: " << activePhysicalVolumeCount << G4endl;
