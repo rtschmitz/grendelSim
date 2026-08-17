@@ -691,16 +691,20 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                             scintWallTrackerGap,
                             scintWallFloorCutback);
 
-    makeAndPlaceLayerSegments("gargoyle_scint",
-                              "gargoyle_scint_phys",
-                              scintSegmentsNoOverlap,
-                              wallGap,
-                              scintThickness,
-                              matPlScin,
-                              G4Colour::Cyan(),
-                              0,
-                              false,
-                              0.0);
+    std::vector<Segment> originalFloorSegment;
+    originalFloorSegment.push_back(scintSegmentsNoOverlap[0]);
+    makeAndPlaceLayerSegments("gargoyle_scint_floor",
+                              "gargoyle_scint_phys_floor",
+                              originalFloorSegment, wallGap, scintThickness,
+                              matPlScin, G4Colour::Cyan(), 0, false, 0.0);
+
+    std::vector<Segment> originalWallSegments;
+    originalWallSegments.push_back(scintSegmentsNoOverlap[1]);
+    originalWallSegments.push_back(scintSegmentsNoOverlap[2]);
+    makeAndPlaceLayerSegments("gargoyle_scint_walls",
+                              "gargoyle_scint_phys_walls",
+                              originalWallSegments, wallGap, trackerThickness,
+                              matPlScin, G4Colour::Cyan(), 1, false, 0.0);
 
     auto placeInnerWallVeto = [&](G4int extensionIndex,
                                   G4double gapFromWallTracker,
@@ -788,7 +792,8 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         G4cout << "  tunnel floor width: " << G4BestUnit(tunnelAlpha, "Length") << G4endl;
         G4cout << "  tunnel height: " << G4BestUnit(tunnelBeta, "Length") << G4endl;
         G4cout << "  wall midpoint transition y: " << G4BestUnit(midWallY, "Length") << G4endl;
-        G4cout << "  scintillator thickness: " << G4BestUnit(scintThickness, "Length") << G4endl;
+        G4cout << "  floor veto thickness: " << G4BestUnit(scintThickness, "Length") << G4endl;
+        G4cout << "  wall veto thickness: " << G4BestUnit(trackerThickness, "Length") << G4endl;
         G4cout << "  tracker sub-layer scintillator thickness: "
                << G4BestUnit(trackerSublayerThickness, "Length") << G4endl;
         G4cout << "  tracker intra-layer air gap: "
