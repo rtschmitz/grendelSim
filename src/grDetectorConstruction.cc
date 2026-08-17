@@ -702,6 +702,30 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                               false,
                               0.0);
 
+    auto placeInnerWallVeto = [&](G4int extensionIndex,
+                                  G4double gapFromWallTracker,
+                                  G4int copyBase,
+                                  const G4Colour& colour) {
+        std::vector<Segment> wallSegments;
+        wallSegments.push_back(scintSegmentsNoOverlap[1]);
+        wallSegments.push_back(scintSegmentsNoOverlap[2]);
+        const G4double layerOffset = wallGap + trackerThickness
+                                     + gapFromWallTracker;
+        std::ostringstream baseName;
+        std::ostringstream physBaseName;
+        baseName << "gargoyle_scint_wall_extension_layer" << extensionIndex;
+        physBaseName << "gargoyle_scint_phys_wall_extension_layer" << extensionIndex;
+        makeAndPlaceLayerSegments(baseName.str(), physBaseName.str(),
+                                  wallSegments, layerOffset, scintThickness,
+                                  matPlScin, colour, copyBase, false, 0.0);
+    };
+
+    // Continue each inner tracker station down both lower walls.  These reuse
+    // the original veto wall endpoints and deliberately add no floor pieces.
+    placeInnerWallVeto(1, 12.0 * cm, 100, G4Colour(0.1, 0.8, 0.8, 0.75));
+    placeInnerWallVeto(2, trackerLayerGap, 200, G4Colour(0.25, 0.7, 0.9, 0.75));
+    placeInnerWallVeto(3, 36.0 * cm, 300, G4Colour(0.4, 0.6, 0.95, 0.75));
+
     auto placeTrackerStation = [&](G4int layerIndex,
                                    G4double gapFromWallTracker,
                                    G4int phiCopyBase,
@@ -754,8 +778,8 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         activeLayerLogics[i]->SetSensitiveDetector(myScintSD);
     }
 
-    // Count the lower scintillator shell plus eight tracker sub-layers.
-    this->SetNLayer(9);
+    // Count the original veto, three wall extensions, and eight tracker sub-layers.
+    this->SetNLayer(12);
     this->SetNBarPerLayer(1);
 
     if (verbose >= 0) {
@@ -773,6 +797,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                << G4BestUnit(trackerThickness, "Length") << G4endl;
         G4cout << "  original tracker edge-to-edge gap: "
                << G4BestUnit(trackerLayerGap, "Length") << G4endl;
+        G4cout << "  inner tracker lower-wall veto extensions: 12 cm, 24 cm, 36 cm" << G4endl;
         G4cout << "  tracker station edge gaps from wall tracker: 12 cm, 24 cm, 36 cm" << G4endl;
         G4cout << "  tracker segmentation: 1 cm phi strips plus 1 cm longitudinal strips" << G4endl;
         G4cout << "  active logical volumes: " << activeLayerLogics.size() << G4endl;
