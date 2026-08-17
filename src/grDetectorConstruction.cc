@@ -72,7 +72,6 @@
 #include "G4LogicalVolume.hh"
 
 #include "G4PVPlacement.hh"
-#include "G4PVReplica.hh"
 #include "G4VPVParameterisation.hh"
 #include "G4PVParameterised.hh"
 #include "globals.hh"
@@ -433,6 +432,33 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         return shifted(p1, currNorm, offset);
     };
 
+    std::vector<G4double> upperArcLength(upperSegments.size() + 1, 0.0);
+    for (std::size_t i = 0; i < upperSegments.size(); ++i) {
+        const G4double dx = upperSegments[i].second.x() - upperSegments[i].first.x();
+        const G4double dy = upperSegments[i].second.y() - upperSegments[i].first.y();
+        upperArcLength[i + 1] = upperArcLength[i] + std::sqrt(dx * dx + dy * dy);
+    }
+
+    auto pointOnUpperLayer = [&](G4double arcDistance,
+                                 G4double offset) -> G4TwoVector {
+        arcDistance = std::max(0.0, std::min(arcDistance, upperArcLength.back()));
+        std::size_t i = std::upper_bound(upperArcLength.begin(),
+                                         upperArcLength.end(), arcDistance)
+                        - upperArcLength.begin();
+        if (i == 0) i = 1;
+        if (i > upperSegments.size()) i = upperSegments.size();
+        --i;
+        const G4double segmentLength = upperArcLength[i + 1] - upperArcLength[i];
+        const G4double fraction = segmentLength > 0.0
+                ? (arcDistance - upperArcLength[i]) / segmentLength : 0.0;
+        const G4TwoVector base(
+                upperSegments[i].first.x()
+                    + fraction * (upperSegments[i].second.x() - upperSegments[i].first.x()),
+                upperSegments[i].first.y()
+                    + fraction * (upperSegments[i].second.y() - upperSegments[i].first.y()));
+        return shifted(base, segmentInwardNormal(upperSegments[i]), offset);
+    };
+
     std::vector<G4LogicalVolume*> activeLayerLogics;
     std::size_t activePhysicalVolumeCount = 0;
 
@@ -547,34 +573,130 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     };
 
 
-    auto makeAndPlaceLongitudinalSegments = [&](const G4String& baseName,
+    auto makeAndPlaceTriangularPhiStrips = [&](const G4String& baseName,
                                                 const G4String& physBaseName,
-                                                const std::vector<Segment>& segments,
                                                 G4double wallOffset,
                                                 G4double thickness,
                                                 G4Material* material,
                                                 const G4Colour& colour,
-                                                G4double segmentWidth) {
-        // A continuous upper-wall/arch shell, sliced along z, makes strips
-        // orthogonal to the existing phi-segmented strips.
-        std::vector<G4TwoVector> shellProfile;
-        shellProfile.reserve(2 * (segments.size() + 1));
-        shellProfile.push_back(offsetStartPoint(segments, 0, wallOffset));
-        for (std::size_t i = 0; i < segments.size(); ++i) {
-            shellProfile.push_back(offsetEndPoint(segments, i, wallOffset));
-        }
+                                                G4int copyBase,
+                                                G4double halfPitch) {
+        const G4int cellCount = static_cast<G4int>(
+                std::ceil(upperArcLength.back() / halfPitch));
+        const G4double pitch = upperArcLength.back() / cellCount;
+        for (G4int center = 0; center <= cellCount; ++center) {
+            const G4double centerArc = center * pitch;
+            std::vector<G4TwoVector> triangle;
+            if (center == 0) {
+                triangle.push_back(pointOnUpperLayer(0.0, wallOffset));
+                triangle.push_back(pointOnUpperLayer(0.0, wallOffset + thickness));
+                triangle.push_back(pointOnUpperLayer(pitch, wallOffset + thickness));
+            } else if (center == cellCount) {
+                if ((center % 2) == 0) {
+                    triangle.push_back(pointOnUpperLayer(centerArc, wallOffset));
+                    triangle.push_back(pointOnUpperLayer(centerArc - pitch, wallOffset + thickness));
+                    triangle.push_back(pointOnUpperLayer(centerArc, wallOffset + thickness));
+                } else {
+                    triangle.push_back(pointOnUpperLayer(centerArc, wallOffset + thickness));
+                    triangle.push_back(pointOnUpperLayer(centerArc - pitch, wallOffset));
+                    triangle.push_back(pointOnUpperLayer(centerArc, wallOffset));
+                }
+            } else if ((center % 2) == 1) {
+                triangle.push_back(pointOnUpperLayer(centerArc - pitch, wallOffset));
+                triangle.push_back(pointOnUpperLayer(centerArc + pitch, wallOffset));
+                triangle.push_back(pointOnUpperLayer(centerArc, wallOffset + thickness));
+            } else {
+                triangle.push_back(pointOnUpperLayer(centerArc - pitch, wallOffset + thickness));
+                triangle.push_back(pointOnUpperLayer(centerArc + pitch, wallOffset + thickness));
+                triangle.push_back(pointOnUpperLayer(centerArc, wallOffset));
+            }
 
-        const G4double outerOffset = wallOffset + thickness;
-        shellProfile.push_back(offsetEndPoint(segments, segments.size() - 1, outerOffset));
-        for (std::size_t i = segments.size(); i > 0; --i) {
-            shellProfile.push_back(offsetStartPoint(segments, i - 1, outerOffset));
+            std::ostringstream solidName, logicName, physName;
+            solidName << baseName << "_solid_" << center;
+            logicName << baseName << "_logic_" << center;
+            physName << physBaseName << "_" << center;
+            G4VSolid* solid = makeExtrudedSolid(solidName.str(), triangle, tunnelHalfZ);
+            G4LogicalVolume* logic = new G4LogicalVolume(
+                    solid, material, logicName.str(), 0, 0, 0);
+            G4VisAttributes* vis = new G4VisAttributes((center % 2)
+                    ? colour : makeAlternateColour(colour));
+            vis->SetVisibility(true);
+            vis->SetForceSolid(true);
+            vis->SetForceAuxEdgeVisible(true);
+            logic->SetVisAttributes(vis);
+            new G4PVPlacement(0, G4ThreeVector(), logic, physName.str(),
+                    logicWorld, false, copyBase + center, false);
+            activeLayerLogics.push_back(logic);
+            ++activePhysicalVolumeCount;
         }
+    };
 
-        const G4int segmentCount = static_cast<G4int>(
-                std::ceil(tunnelLength / segmentWidth));
-        const G4double actualWidth = tunnelLength / segmentCount;
-        G4VSolid* envelopeSolid = makeExtrudedSolid(baseName + "_envelope_solid",
-                                                    shellProfile, tunnelHalfZ);
+    auto makeAndPlaceTriangularLongitudinalStrips = [&](
+            const G4String& baseName, const G4String& physBaseName,
+            G4double wallOffset, G4double thickness, G4Material* material,
+            const G4Colour& colour, G4int copyBase, G4double halfPitch) {
+        auto offsetPath = [&](G4double offset) {
+            std::vector<G4TwoVector> path;
+            path.reserve(upperSegments.size() + 1);
+            path.push_back(offsetStartPoint(upperSegments, 0, offset));
+            for (std::size_t i = 0; i < upperSegments.size(); ++i)
+                path.push_back(offsetEndPoint(upperSegments, i, offset));
+            return path;
+        };
+        const std::vector<G4TwoVector> inner = offsetPath(wallOffset);
+        const std::vector<G4TwoVector> outer = offsetPath(wallOffset + thickness);
+
+        auto triangularTube = [&](const G4String& name,
+                                  const std::vector<G4TwoVector>& a, G4double za,
+                                  const std::vector<G4TwoVector>& b, G4double zb,
+                                  const std::vector<G4TwoVector>& c, G4double zc) {
+            G4TessellatedSolid* solid = new G4TessellatedSolid(name);
+            for (std::size_t i = 0; i + 1 < a.size(); ++i) {
+                const G4ThreeVector a0(a[i].x(), a[i].y(), za);
+                const G4ThreeVector a1(a[i+1].x(), a[i+1].y(), za);
+                const G4ThreeVector b0(b[i].x(), b[i].y(), zb);
+                const G4ThreeVector b1(b[i+1].x(), b[i+1].y(), zb);
+                const G4ThreeVector c0(c[i].x(), c[i].y(), zc);
+                const G4ThreeVector c1(c[i+1].x(), c[i+1].y(), zc);
+                solid->AddFacet(new G4QuadrangularFacet(a0, a1, b1, b0, ABSOLUTE));
+                solid->AddFacet(new G4QuadrangularFacet(b0, b1, c1, c0, ABSOLUTE));
+                solid->AddFacet(new G4QuadrangularFacet(c0, c1, a1, a0, ABSOLUTE));
+            }
+            const std::size_t last = a.size() - 1;
+            solid->AddFacet(new G4TriangularFacet(
+                    G4ThreeVector(a[0].x(),a[0].y(),za),
+                    G4ThreeVector(b[0].x(),b[0].y(),zb),
+                    G4ThreeVector(c[0].x(),c[0].y(),zc), ABSOLUTE));
+            solid->AddFacet(new G4TriangularFacet(
+                    G4ThreeVector(c[last].x(),c[last].y(),zc),
+                    G4ThreeVector(b[last].x(),b[last].y(),zb),
+                    G4ThreeVector(a[last].x(),a[last].y(),za), ABSOLUTE));
+            solid->SetSolidClosed(true);
+            return solid;
+        };
+
+        const G4int cellCount = static_cast<G4int>(
+                std::ceil(tunnelLength / halfPitch));
+        const G4double pitch = tunnelLength / cellCount;
+        const G4double zMin = -tunnelHalfZ;
+        G4VSolid* upSolid = triangularTube(baseName + "_up_solid",
+                inner, -pitch, outer, 0.0, inner, pitch);
+        G4VSolid* downSolid = triangularTube(baseName + "_down_solid",
+                outer, -pitch, inner, 0.0, outer, pitch);
+        G4VSolid* leftSolid = triangularTube(baseName + "_left_cap_solid",
+                inner, 0.0, outer, 0.0, outer, pitch);
+        const G4bool rightApexInner = (cellCount % 2) == 0;
+        G4VSolid* rightSolid = rightApexInner
+                ? triangularTube(baseName + "_right_cap_solid",
+                        outer, -pitch, outer, 0.0, inner, 0.0)
+                : triangularTube(baseName + "_right_cap_solid",
+                        inner, -pitch, inner, 0.0, outer, 0.0);
+
+        std::vector<G4TwoVector> envelopeProfile = inner;
+        for (std::size_t i = outer.size(); i > 0; --i)
+            envelopeProfile.push_back(outer[i - 1]);
+        G4VSolid* envelopeSolid = makeExtrudedSolid(
+                baseName + "_envelope_solid", envelopeProfile, tunnelHalfZ);
         G4LogicalVolume* envelopeLogic = new G4LogicalVolume(
                 envelopeSolid, worldMaterial, baseName + "_envelope_logic", 0, 0, 0);
         G4VisAttributes* envelopeVis = new G4VisAttributes();
@@ -583,22 +705,37 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         new G4PVPlacement(0, G4ThreeVector(), envelopeLogic,
                 baseName + "_envelope_phys", logicWorld, false, 0, false);
 
-        G4VSolid* stripSolid = makeExtrudedSolid(baseName + "_solid",
-                                                 shellProfile,
-                                                 0.5 * actualWidth);
-        G4LogicalVolume* stripLogic = new G4LogicalVolume(stripSolid, material,
-                                                          baseName + "_logic",
-                                                          0, 0, 0);
+        G4LogicalVolume* upLogic = new G4LogicalVolume(
+                upSolid, material, baseName + "_up_logic", 0, 0, 0);
+        G4LogicalVolume* downLogic = new G4LogicalVolume(
+                downSolid, material, baseName + "_down_logic", 0, 0, 0);
+        G4LogicalVolume* leftLogic = new G4LogicalVolume(
+                leftSolid, material, baseName + "_left_logic", 0, 0, 0);
+        G4LogicalVolume* rightLogic = new G4LogicalVolume(
+                rightSolid, material, baseName + "_right_logic", 0, 0, 0);
         G4VisAttributes* vis = new G4VisAttributes(colour);
-        vis->SetVisibility(true);
-        vis->SetForceSolid(true);
-        vis->SetForceAuxEdgeVisible(true);
-        stripLogic->SetVisAttributes(vis);
+        G4VisAttributes* alternateVis = new G4VisAttributes(makeAlternateColour(colour));
+        vis->SetVisibility(true); vis->SetForceSolid(true);
+        alternateVis->SetVisibility(true); alternateVis->SetForceSolid(true);
+        upLogic->SetVisAttributes(vis); downLogic->SetVisAttributes(alternateVis);
+        leftLogic->SetVisAttributes(alternateVis);
+        rightLogic->SetVisAttributes(rightApexInner ? alternateVis : vis);
 
-        new G4PVReplica(physBaseName, stripLogic, envelopeLogic, kZAxis,
-                        segmentCount, actualWidth);
-        activePhysicalVolumeCount += segmentCount;
-        activeLayerLogics.push_back(stripLogic);
+        for (G4int i = 0; i <= cellCount; ++i) {
+            G4LogicalVolume* logic = (i == 0) ? leftLogic
+                    : (i == cellCount) ? rightLogic
+                    : (i % 2) ? upLogic : downLogic;
+            std::ostringstream physName;
+            physName << physBaseName << "_" << i;
+            new G4PVPlacement(0, G4ThreeVector(0, 0, zMin + i * pitch), logic,
+                    physName.str(), envelopeLogic, false, copyBase + i, false);
+        }
+
+        activeLayerLogics.push_back(upLogic);
+        activeLayerLogics.push_back(downLogic);
+        activeLayerLogics.push_back(leftLogic);
+        activeLayerLogics.push_back(rightLogic);
+        activePhysicalVolumeCount += cellCount + 1;
     };
 
     const G4double wallGap          = 0.1 * cm;
@@ -607,7 +744,8 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     const G4double trackerSublayerGap = 1.0 * mm;
     const G4double trackerThickness = 2.0 * trackerSublayerThickness
                                       + trackerSublayerGap;
-    const G4double trackerSegmentWidth = 1.0 * cm;
+    const G4double trackerStripBase = 3.0 * cm;
+    const G4double trackerHalfPitch = 0.5 * trackerStripBase;
 
     // Each tracker contains a phi-segmented plane and an orthogonal,
     // z-segmented plane separated by 1 mm of air.  trackerLayerGap is measured
@@ -702,48 +840,44 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                               false,
                               0.0);
 
-    makeAndPlaceLayerSegments("gargoyle_si_layer1",
-                              "gargoyle_si_layer1_phys",
-                              upperSegments,
-                              wallGap,
-                              trackerSublayerThickness,
-                              matPlScin,
-                              G4Colour(0.1, 0.8, 0.1, 0.75),
-                              1000,
-                              true,
-                              0.0);
+    makeAndPlaceTriangularPhiStrips("gargoyle_si_layer1",
+                                     "gargoyle_si_layer1_phys",
+                                     wallGap,
+                                     trackerSublayerThickness,
+                                     matPlScin,
+                                     G4Colour(0.1, 0.8, 0.1, 0.75),
+                                     1000,
+                                     trackerHalfPitch);
 
-    makeAndPlaceLongitudinalSegments("gargoyle_si_layer1_z",
+    makeAndPlaceTriangularLongitudinalStrips("gargoyle_si_layer1_z",
                                      "gargoyle_si_layer1_z_phys",
-                                     upperSegments,
                                      wallGap + trackerSublayerThickness
                                              + trackerSublayerGap,
                                      trackerSublayerThickness,
                                      matPlScin,
                                      G4Colour(0.1, 0.55, 0.95, 0.75),
-                                     trackerSegmentWidth);
+                                     10000,
+                                     trackerHalfPitch);
 
-    makeAndPlaceLayerSegments("gargoyle_si_layer2",
-                              "gargoyle_si_layer2_phys",
-                              upperSegments,
-                              wallGap + trackerThickness + trackerLayerGap,
-                              trackerSublayerThickness,
-                              matPlScin,
-                              G4Colour(0.9, 0.9, 0.1, 0.75),
-                              2000,
-                              true,
-                              0.0);
+    makeAndPlaceTriangularPhiStrips("gargoyle_si_layer2",
+                                     "gargoyle_si_layer2_phys",
+                                     wallGap + trackerThickness + trackerLayerGap,
+                                     trackerSublayerThickness,
+                                     matPlScin,
+                                     G4Colour(0.9, 0.9, 0.1, 0.75),
+                                     2000,
+                                     trackerHalfPitch);
 
-    makeAndPlaceLongitudinalSegments("gargoyle_si_layer2_z",
+    makeAndPlaceTriangularLongitudinalStrips("gargoyle_si_layer2_z",
                                      "gargoyle_si_layer2_z_phys",
-                                     upperSegments,
                                      wallGap + trackerThickness + trackerLayerGap
                                              + trackerSublayerThickness
                                              + trackerSublayerGap,
                                      trackerSublayerThickness,
                                      matPlScin,
                                      G4Colour(0.95, 0.45, 0.1, 0.75),
-                                     trackerSegmentWidth);
+                                     20000,
+                                     trackerHalfPitch);
 
     // Reuse the existing Scint_SD/grScintSD infrastructure for all active layers.
     G4SDManager* SDman = G4SDManager::GetSDMpointer();
@@ -778,7 +912,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                << G4BestUnit(trackerThickness, "Length") << G4endl;
         G4cout << "  tracker edge-to-edge inter-layer gap: "
                << G4BestUnit(trackerLayerGap, "Length") << G4endl;
-        G4cout << "  tracker segmentation: 1 cm phi strips plus 1 cm longitudinal strips" << G4endl;
+        G4cout << "  tracker segmentation: alternating triangular strips, 3 cm base by 1.5 cm height" << G4endl;
         G4cout << "  active logical volumes: " << activeLayerLogics.size() << G4endl;
         G4cout << "  active physical segments: " << activePhysicalVolumeCount << G4endl;
     }
