@@ -8,6 +8,7 @@
 
 
 #include "grTrackingAction.hh"
+#include "grVolumeID.hh"
 #include "grUserTrackInformation.hh"
 #include "grDetectorConstruction.hh"
 #include "grHistoManager.hh"
@@ -166,6 +167,8 @@ void grTrackingAction::PreUserTrackingAction(const G4Track* aTrack)
     || initialVolumeName.contains("airGapPanel_physic")){
     initialCopyNo = touch->GetCopyNumber(1);
     }
+
+  initialCopyNo = grVolumeID::FromTouchable(touch);
 
   //Primary track has no creator process, so ensure that it exists before you try to access it.
   const G4VProcess* myProcess = aTrack->GetCreatorProcess();
@@ -353,7 +356,7 @@ void grTrackingAction::PostUserTrackingAction(const G4Track* aTrack){
         if (finalStepPoint != NULL) {
                         if (finalStepPoint->GetPhysicalVolume() != NULL) {
                                 finalVolumeName = finalStepPoint->GetPhysicalVolume()->GetName();
-        finalCopyNo = finalStepPoint->GetPhysicalVolume()->GetCopyNo();
+        finalCopyNo = grVolumeID::FromTouchable(finalStepPoint->GetTouchable());
                         }
 
                         if (finalStepPoint->GetProcessDefinedStep() != NULL) {

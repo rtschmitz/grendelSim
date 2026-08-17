@@ -10,16 +10,16 @@
 #include <vector>
 
 #define TRACK_FIELDS(X, P) \
-  X(P, trackID, Int_t) X(P, pdgID, Int_t) X(P, parentID, Int_t) X(P, initialCopyNo, Int_t) X(P, finalCopyNo, Int_t) \
+  X(P, trackID, Int_t) X(P, pdgID, Int_t) X(P, parentID, Int_t) X(P, initialVolumeID, Int_t) X(P, finalVolumeID, Int_t) \
   X(P, initialTime_s, Float_t) X(P, finalTime_s, Float_t) X(P, initialEnergy_MeV, Float_t) X(P, finalEnergy_MeV, Float_t) \
   X(P, initialX_m, Float_t) X(P, initialY_m, Float_t) X(P, initialZ_m, Float_t) \
   X(P, finalX_m, Float_t) X(P, finalY_m, Float_t) X(P, finalZ_m, Float_t) X(P, trackLength_m, Float_t) \
-  X(P, initialProcess, std::string) X(P, finalProcess, std::string) X(P, initialVolume, std::string) X(P, finalVolume, std::string)
+  X(P, initialProcess, std::string) X(P, finalProcess, std::string)
 #define ELECTRON_FIELDS(X, P) \
-  X(P, trackID, Int_t) X(P, pdgID, Int_t) X(P, parentID, Int_t) X(P, initialCopyNo, Int_t) X(P, finalCopyNo, Int_t) \
+  X(P, trackID, Int_t) X(P, pdgID, Int_t) X(P, parentID, Int_t) X(P, initialVolumeID, Int_t) X(P, finalVolumeID, Int_t) \
   X(P, initialTime_s, Float_t) X(P, finalTime_s, Float_t) X(P, initialEnergy_MeV, Float_t) X(P, finalEnergy_MeV, Float_t) \
   X(P, initialX_m, Float_t) X(P, initialY_m, Float_t) X(P, initialZ_m, Float_t) X(P, trackLength_m, Float_t) \
-  X(P, initialProcess, std::string) X(P, finalProcess, std::string) X(P, initialVolume, std::string) X(P, finalVolume, std::string)
+  X(P, initialProcess, std::string) X(P, finalProcess, std::string)
 #define DECLARE_VECTOR(P, N, T) std::vector<T> P##_##N;
 #define CLEAR_VECTOR(P, N, T) P##_##N.clear();
 #define BRANCH_VECTOR(P, N, T) tree->Branch(#P "_" #N, &P##_##N);
@@ -39,7 +39,8 @@ struct grOutputBuffer {
   std::vector<Float_t> scint_kineticEnergy_MeV, scint_time_ns;
   std::vector<Float_t> scint_x_m, scint_y_m, scint_z_m;
   std::vector<Float_t> scint_directionX, scint_directionY, scint_directionZ;
-  std::vector<std::string> scint_creatorProcess, scint_originVolume;
+  std::vector<std::string> scint_creatorProcess;
+  std::vector<Int_t> scint_originVolumeID;
 
   void branch(TTree* tree);
   void clear();
@@ -59,7 +60,7 @@ void grOutputBuffer::branch(TTree* tree) {
   B(scint_kineticEnergy_MeV) B(scint_time_ns)
   B(scint_x_m) B(scint_y_m) B(scint_z_m)
   B(scint_directionX) B(scint_directionY) B(scint_directionZ)
-  B(scint_creatorProcess) B(scint_originVolume)
+  B(scint_creatorProcess) B(scint_originVolumeID)
 #undef B
 }
 
@@ -74,7 +75,7 @@ void grOutputBuffer::clear() {
   C(scint_kineticEnergy_MeV) C(scint_time_ns)
   C(scint_x_m) C(scint_y_m) C(scint_z_m)
   C(scint_directionX) C(scint_directionY) C(scint_directionZ)
-  C(scint_creatorProcess) C(scint_originVolume)
+  C(scint_creatorProcess) C(scint_originVolumeID)
 #undef C
 }
 
@@ -82,14 +83,13 @@ namespace {
 std::string text(const TString& value) { return value.Data(); }
 #define FILL_TRACK(O, T, P) \
   O.P##_trackID.push_back(T->GetTrackID()); O.P##_pdgID.push_back(T->GetPDGID()); O.P##_parentID.push_back(T->GetParentID()); \
-  O.P##_initialCopyNo.push_back(T->GetFirstCopyNo()); O.P##_finalCopyNo.push_back(T->GetLastCopyNo()); \
+  O.P##_initialVolumeID.push_back(T->GetFirstCopyNo()); O.P##_finalVolumeID.push_back(T->GetLastCopyNo()); \
   O.P##_initialTime_s.push_back(T->GetTimeOfFirstProcess()); O.P##_finalTime_s.push_back(T->GetTimeOfLastProcess()); \
   O.P##_initialEnergy_MeV.push_back(T->GetInitialEnergy()); O.P##_finalEnergy_MeV.push_back(T->GetFinalEnergy()); \
   O.P##_initialX_m.push_back(T->GetFirstPositionX()); O.P##_initialY_m.push_back(T->GetFirstPositionY()); O.P##_initialZ_m.push_back(T->GetFirstPositionZ()); \
   O.P##_finalX_m.push_back(T->GetLastPositionX()); O.P##_finalY_m.push_back(T->GetLastPositionY()); O.P##_finalZ_m.push_back(T->GetLastPositionZ()); \
   O.P##_trackLength_m.push_back(T->GetTotalTrackLength()); \
-  O.P##_initialProcess.push_back(text(T->GetFirstProcessName())); O.P##_finalProcess.push_back(text(T->GetLastProcessName())); \
-  O.P##_initialVolume.push_back(text(T->GetFirstVolume())); O.P##_finalVolume.push_back(text(T->GetLastVolume()));
+  O.P##_initialProcess.push_back(text(T->GetFirstProcessName())); O.P##_finalProcess.push_back(text(T->GetLastProcessName()));;
 }
 
 grHistoManager::grHistoManager() : rootFile(0), eventTree(0), output(new grOutputBuffer()) {}
@@ -114,7 +114,7 @@ void grHistoManager::save() {
 void grHistoManager::FillEventNtuple(grUserEventInformation& e) {
   grOutputBuffer& o = *output;
   o.clear();
-  o.schemaVersion = 4;
+  o.schemaVersion = 5;
   o.runID = e.GetRunID(); o.eventID = e.GetEventID(); o.processID = e.GetProcessID(); o.eventWeight = e.GetEventWeight();
   o.kaonCavern = e.GetKaonCavern();
 
@@ -127,13 +127,12 @@ void grHistoManager::FillEventNtuple(grUserEventInformation& e) {
   const grElectronTrackVector& electrons = *e.GetElectronTracks();
   for (std::size_t i=0; i<electrons.size(); ++i) { grElectronTrack* t=electrons[i];
     o.electron_trackID.push_back(t->GetTrackID()); o.electron_pdgID.push_back(t->GetPDGID()); o.electron_parentID.push_back(t->GetParentID());
-    o.electron_initialCopyNo.push_back(t->GetFirstCopyNo()); o.electron_finalCopyNo.push_back(t->GetLastCopyNo());
+    o.electron_initialVolumeID.push_back(t->GetFirstCopyNo()); o.electron_finalVolumeID.push_back(t->GetLastCopyNo());
     o.electron_initialTime_s.push_back(t->GetTimeOfFirstProcess()); o.electron_finalTime_s.push_back(t->GetTimeOfLastProcess());
     o.electron_initialEnergy_MeV.push_back(t->GetInitialEnergy()); o.electron_finalEnergy_MeV.push_back(t->GetFinalEnergy());
     o.electron_initialX_m.push_back(t->GetFirstPositionX()); o.electron_initialY_m.push_back(t->GetFirstPositionY()); o.electron_initialZ_m.push_back(t->GetFirstPositionZ());
     o.electron_trackLength_m.push_back(t->GetTotalTrackLength());
     o.electron_initialProcess.push_back(text(t->GetFirstProcessName())); o.electron_finalProcess.push_back(text(t->GetLastProcessName()));
-    o.electron_initialVolume.push_back(text(t->GetFirstVolume())); o.electron_finalVolume.push_back(text(t->GetLastVolume()));
   }
   const grMCPTrackVector& kaons = *e.GetMCPTracks();
   for (std::size_t i=0; i<kaons.size(); ++i) { grMCPTrack* t=kaons[i]; FILL_TRACK(o,t,kaon) }
@@ -148,7 +147,7 @@ void grHistoManager::FillEventNtuple(grUserEventInformation& e) {
     o.scint_time_ns.push_back(h->GetHitTime()/ns);
     o.scint_x_m.push_back(p.x()/m); o.scint_y_m.push_back(p.y()/m); o.scint_z_m.push_back(p.z()/m);
     o.scint_directionX.push_back(d.x()); o.scint_directionY.push_back(d.y()); o.scint_directionZ.push_back(d.z());
-    o.scint_creatorProcess.push_back(h->GetProcName()); o.scint_originVolume.push_back(h->GetCreatorVolName());
+    o.scint_creatorProcess.push_back(h->GetProcName()); o.scint_originVolumeID.push_back(h->GetOriginVolumeID());
   }
   eventTree->Fill();
 }
