@@ -737,7 +737,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
             G4Colour(0.2, 0.85, 0.5, 0.75), G4Colour(0.2, 0.65, 0.95, 0.75));
     placeTrackerStation(2, trackerLayerGap, 2000,
             G4Colour(0.9, 0.9, 0.1, 0.75), G4Colour(0.95, 0.45, 0.1, 0.75));
-    placeTrackerStation(5, 32.0 * cm, 5000,
+    placeTrackerStation(5, 36.0 * cm, 5000,
             G4Colour(0.95, 0.55, 0.2, 0.75), G4Colour(0.95, 0.25, 0.55, 0.75));
 
     // Reuse the existing Scint_SD/grScintSD infrastructure for all active layers.
@@ -773,7 +773,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                << G4BestUnit(trackerThickness, "Length") << G4endl;
         G4cout << "  original tracker edge-to-edge gap: "
                << G4BestUnit(trackerLayerGap, "Length") << G4endl;
-        G4cout << "  tracker station edge gaps from wall tracker: 12 cm, 24 cm, 32 cm" << G4endl;
+        G4cout << "  tracker station edge gaps from wall tracker: 12 cm, 24 cm, 36 cm" << G4endl;
         G4cout << "  tracker segmentation: 1 cm phi strips plus 1 cm longitudinal strips" << G4endl;
         G4cout << "  active logical volumes: " << activeLayerLogics.size() << G4endl;
         G4cout << "  active physical segments: " << activePhysicalVolumeCount << G4endl;
