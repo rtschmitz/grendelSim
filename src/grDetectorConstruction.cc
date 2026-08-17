@@ -30,6 +30,7 @@
 #include "G4RunManager.hh"
 #include "G4UserLimits.hh"
 #include "G4VisAttributes.hh"
+#include "grVolumeID.hh"
 #include "G4Colour.hh"
 #include "G4EmCalculator.hh"
 #include "G4ParticleDefinition.hh"
@@ -718,7 +719,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     makeAndPlaceLayerSegments("gargoyle_scint_floor",
                               "gargoyle_scint_phys_floor",
                               originalFloorSegment, wallGap, scintThickness,
-                              matPlScin, G4Colour::Cyan(), 0, false, 0.0);
+                              matPlScin, G4Colour::Cyan(), 100, false, 0.0);
 
     std::vector<Segment> originalWallSegments;
     originalWallSegments.push_back(scintSegmentsNoOverlap[1]);
@@ -726,7 +727,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     makeAndPlaceLayerSegments("gargoyle_scint_walls",
                               "gargoyle_scint_phys_walls",
                               originalWallSegments, wallGap, trackerThickness,
-                              matPlScin, G4Colour::Cyan(), 1, false, 0.0);
+                              matPlScin, G4Colour::Cyan(), 110, false, 0.0);
 
     auto placeInnerWallVeto = [&](G4int extensionIndex,
                                   G4double gapFromWallTracker,
@@ -748,9 +749,9 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
 
     // Continue each inner tracker station down both lower walls.  These reuse
     // the original veto wall endpoints and deliberately add no floor pieces.
-    placeInnerWallVeto(1, 12.0 * cm, 100, G4Colour(0.1, 0.8, 0.8, 0.75));
-    placeInnerWallVeto(2, trackerLayerGap, 200, G4Colour(0.25, 0.7, 0.9, 0.75));
-    placeInnerWallVeto(3, 36.0 * cm, 300, G4Colour(0.4, 0.6, 0.95, 0.75));
+    placeInnerWallVeto(1, 12.0 * cm, 120, G4Colour(0.1, 0.8, 0.8, 0.75));
+    placeInnerWallVeto(2, trackerLayerGap, 130, G4Colour(0.25, 0.7, 0.9, 0.75));
+    placeInnerWallVeto(3, 36.0 * cm, 140, G4Colour(0.4, 0.6, 0.95, 0.75));
 
     auto placeTrackerStation = [&](G4int layerIndex,
                                    G4double gapFromWallTracker,
@@ -783,11 +784,11 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     // New station identifiers follow in otherwise-unused copy-number ranges.
     placeTrackerStation(1,  0.0 * cm, 1000,
             G4Colour(0.1, 0.8, 0.1, 0.75), G4Colour(0.1, 0.55, 0.95, 0.75));
-    placeTrackerStation(3, 12.0 * cm, 3000,
+    placeTrackerStation(3, 12.0 * cm, 2000,
             G4Colour(0.2, 0.85, 0.5, 0.75), G4Colour(0.2, 0.65, 0.95, 0.75));
-    placeTrackerStation(2, trackerLayerGap, 2000,
+    placeTrackerStation(2, trackerLayerGap, 3000,
             G4Colour(0.9, 0.9, 0.1, 0.75), G4Colour(0.95, 0.45, 0.1, 0.75));
-    placeTrackerStation(5, 36.0 * cm, 5000,
+    placeTrackerStation(5, 36.0 * cm, 4000,
             G4Colour(0.95, 0.55, 0.2, 0.75), G4Colour(0.95, 0.25, 0.55, 0.75));
 
     // Reuse the existing Scint_SD/grScintSD infrastructure for all active layers.

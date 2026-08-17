@@ -40,8 +40,8 @@ public:
   G4ThreeVector GetDirection() const { return direction; }
   void SetProcName(G4String value) { procName = value; }
   G4String GetProcName() const { return procName; }
-  void SetCreatorVolName(G4String value) { creatorVolName = value; }
-  G4String GetCreatorVolName() const { return creatorVolName; }
+  void SetOriginVolumeID(G4int value) { originVolumeID = value; }
+  G4int GetOriginVolumeID() const { return originVolumeID; }
   void SetEntering(G4bool value) { entering = value; }
   G4bool IsEntering() const { return entering; }
 
@@ -54,7 +54,7 @@ private:
   G4ThreeVector direction;
   G4int particleName;
   G4String procName;
-  G4String creatorVolName;
+  G4int originVolumeID;
   G4int copyNo;
   G4bool entering;
 };

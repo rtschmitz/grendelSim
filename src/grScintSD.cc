@@ -10,6 +10,7 @@
 #include "grScintHit.hh"
 #include "grDetectorConstruction.hh"
 
+#include "grVolumeID.hh"
 #include "G4HCofThisEvent.hh"
 #include "G4Step.hh"
 #include "G4Track.hh"
@@ -41,66 +42,20 @@ G4bool IsGargoyleActiveVolume(const G4String& volumeName)
          volumeName.contains("gargoyle_si_layer5_z_phys");
 }
 
-G4int GargoyleLayerBase(const G4String& volumeName)
-{
-  // Keep the layer numbering explicit and separated from the old GRENDEL
-  // bar/stacks scheme.  The GARGOYLE geometry places each segment with these
-  // copy-number bases, but this fallback also protects us if the placement copy
-  // numbers are later changed back to local 0..N segment IDs.
-  if (volumeName.contains("gargoyle_scint_phys"))    return 0;
-  if (volumeName.contains("gargoyle_si_layer1_z_phys")) return 10000;
-  if (volumeName.contains("gargoyle_si_layer2_z_phys")) return 20000;
-  if (volumeName.contains("gargoyle_si_layer3_z_phys")) return 30000;
-  if (volumeName.contains("gargoyle_si_layer5_z_phys")) return 50000;
-  if (volumeName.contains("gargoyle_si_layer1_phys")) return 1000;
-  if (volumeName.contains("gargoyle_si_layer2_phys")) return 2000;
-  if (volumeName.contains("gargoyle_si_layer3_phys")) return 3000;
-  if (volumeName.contains("gargoyle_si_layer5_phys")) return 5000;
-  return -1;
-}
-
 G4int GetGargoyleCopyNo(const G4Step* aStep, G4bool usePostPoint)
 {
-  const G4StepPoint* stepPoint = usePostPoint ?
-      aStep->GetPostStepPoint() : aStep->GetPreStepPoint();
-
-  if (!stepPoint || !stepPoint->GetPhysicalVolume() || !stepPoint->GetTouchable()) {
-    return -1;
-  }
-
-  const G4String volumeName = stepPoint->GetPhysicalVolume()->GetName();
-  if (!IsGargoyleActiveVolume(volumeName)) {
-    return -1;
-  }
-
-  const G4int layerBase = GargoyleLayerBase(volumeName);
-  const G4int localCopyNo = stepPoint->GetTouchable()->GetCopyNumber(); // depth 0 only
-
-  // Alternating z strips are daughters of replicated two-strip cells.
-  // Reconstruct the original sequential bin number for stable output IDs.
-  if (volumeName.contains("_z_phys_") &&
-      stepPoint->GetTouchable()->GetHistoryDepth() >= 1) {
-    const G4int cellCopyNo = stepPoint->GetTouchable()->GetCopyNumber(1);
-    return layerBase + 2 * cellCopyNo + localCopyNo;
-  }
-
-  // In the generated GARGOYLE geometry, placement copy numbers are already
-  // global within their layer-specific ranges; preserve them exactly.
-  if (localCopyNo >= layerBase) {
-    return localCopyNo;
-  }
-
-  // If a future geometry uses local segment copy numbers 0..N for every layer,
-  // add the layer offset here.
-  return layerBase + localCopyNo;
+  const G4StepPoint* point = usePostPoint
+      ? aStep->GetPostStepPoint() : aStep->GetPreStepPoint();
+  if (!point || !point->GetPhysicalVolume() || !point->GetTouchable() ||
+      !IsGargoyleActiveVolume(point->GetPhysicalVolume()->GetName())) return -1;
+  return grVolumeID::FromTouchable(point->GetTouchable());
 }
 
-G4String GetVertexVolumeNameSafe(const G4Step* aStep)
+G4int GetOriginVolumeID(const G4Step* aStep)
 {
-  if (!aStep || !aStep->GetTrack() || !aStep->GetTrack()->GetLogicalVolumeAtVertex()) {
-    return "0";
-  }
-  return aStep->GetTrack()->GetLogicalVolumeAtVertex()->GetName();
+  return (aStep && aStep->GetTrack())
+      ? grVolumeID::FromTouchable(aStep->GetTrack()->GetOriginTouchable())
+      : grVolumeID::Unknown;
 }
 
 } // namespace
@@ -185,7 +140,7 @@ G4bool grScintSD::ProcessHitsEnter(const G4Step* aStep,G4TouchableHistory*)
   if (creaProc) creaProcName = creaProc->GetProcessName();
   else creaProcName = "0";
 
-  G4String vertexVolume = GetVertexVolumeNameSafe(aStep);
+  const G4int originVolumeID = GetOriginVolumeID(aStep);
 //  G4cout << vertexVolume << " " << G4endl;
   const G4double kineticEnergy = aStep->GetPostStepPoint()->GetKineticEnergy();
   grScintHit* hit = new grScintHit();
@@ -199,7 +154,7 @@ G4bool grScintSD::ProcessHitsEnter(const G4Step* aStep,G4TouchableHistory*)
     hit->SetParticleName( aStep->GetTrack()->GetDefinition()->GetPDGEncoding() );
     hit->SetCopyNo(copyNo); // sensitive-volume identifier
     hit->SetProcName(creaProcName); //creation process of the particle that caused the hit
-    hit->SetCreatorVolName(vertexVolume); //creation volume of the particle that caused the hit
+    hit->SetOriginVolumeID(originVolumeID); //creation volume of the particle that caused the hit
     hit->SetEntering(true);
     scintCollection->insert(hit);
   return true;
@@ -236,7 +191,7 @@ G4bool grScintSD::ProcessHitsExit(const G4Step* aStep, G4TouchableHistory*)
   hit->SetParticleName(track->GetDefinition()->GetPDGEncoding());
   hit->SetCopyNo(copyNo);
   hit->SetProcName(creator ? creator->GetProcessName() : "0");
-  hit->SetCreatorVolName(GetVertexVolumeNameSafe(aStep));
+  hit->SetOriginVolumeID(GetOriginVolumeID(aStep));
   hit->SetEntering(false);
   scintCollection->insert(hit);
   return true;
