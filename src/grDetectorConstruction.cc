@@ -570,8 +570,11 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
             shellProfile.push_back(offsetStartPoint(segments, i - 1, outerOffset));
         }
 
-        const G4int segmentCount = static_cast<G4int>(
+        G4int segmentCount = static_cast<G4int>(
                 std::ceil(tunnelLength / segmentWidth));
+        // Pair adjacent strips in replicated 2-bin cells. The two daughters can
+        // have distinct display colours while navigation remains replica-based.
+        if ((segmentCount % 2) != 0) ++segmentCount;
         const G4double actualWidth = tunnelLength / segmentCount;
         G4VSolid* envelopeSolid = makeExtrudedSolid(baseName + "_envelope_solid",
                                                     shellProfile, tunnelHalfZ);
@@ -583,22 +586,41 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         new G4PVPlacement(0, G4ThreeVector(), envelopeLogic,
                 baseName + "_envelope_phys", logicWorld, false, 0, false);
 
+        const G4int cellCount = segmentCount / 2;
+        const G4double cellWidth = 2.0 * actualWidth;
+        G4VSolid* cellSolid = makeExtrudedSolid(baseName + "_cell_solid",
+                                                shellProfile, 0.5 * cellWidth);
+        G4LogicalVolume* cellLogic = new G4LogicalVolume(
+                cellSolid, worldMaterial, baseName + "_cell_logic", 0, 0, 0);
+        G4VisAttributes* cellVis = new G4VisAttributes();
+        cellVis->SetVisibility(false);
+        cellLogic->SetVisAttributes(cellVis);
+        new G4PVReplica(physBaseName + "_cell", cellLogic, envelopeLogic,
+                        kZAxis, cellCount, cellWidth);
+
         G4VSolid* stripSolid = makeExtrudedSolid(baseName + "_solid",
                                                  shellProfile,
                                                  0.5 * actualWidth);
-        G4LogicalVolume* stripLogic = new G4LogicalVolume(stripSolid, material,
-                                                          baseName + "_logic",
-                                                          0, 0, 0);
-        G4VisAttributes* vis = new G4VisAttributes(colour);
-        vis->SetVisibility(true);
-        vis->SetForceSolid(true);
-        vis->SetForceAuxEdgeVisible(true);
-        stripLogic->SetVisAttributes(vis);
+        for (G4int parity = 0; parity < 2; ++parity) {
+            std::ostringstream logicName;
+            std::ostringstream physicalName;
+            logicName << baseName << "_logic_" << parity;
+            physicalName << physBaseName << "_" << parity;
+            G4LogicalVolume* stripLogic = new G4LogicalVolume(
+                    stripSolid, material, logicName.str(), 0, 0, 0);
+            G4VisAttributes* vis = new G4VisAttributes(parity == 1
+                    ? makeAlternateColour(colour) : colour);
+            vis->SetVisibility(true);
+            vis->SetForceSolid(true);
+            vis->SetForceAuxEdgeVisible(true);
+            stripLogic->SetVisAttributes(vis);
 
-        new G4PVReplica(physBaseName, stripLogic, envelopeLogic, kZAxis,
-                        segmentCount, actualWidth);
+            const G4double z = (parity == 0 ? -0.5 : 0.5) * actualWidth;
+            new G4PVPlacement(0, G4ThreeVector(0, 0, z), stripLogic,
+                    physicalName.str(), cellLogic, false, parity, false);
+            activeLayerLogics.push_back(stripLogic);
+        }
         activePhysicalVolumeCount += segmentCount;
-        activeLayerLogics.push_back(stripLogic);
     };
 
     const G4double wallGap          = 0.1 * cm;

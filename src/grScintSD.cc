@@ -76,6 +76,14 @@ G4int GetGargoyleCopyNo(const G4Step* aStep, G4bool usePostPoint)
   const G4int layerBase = GargoyleLayerBase(volumeName);
   const G4int localCopyNo = stepPoint->GetTouchable()->GetCopyNumber(); // depth 0 only
 
+  // Alternating z strips are daughters of replicated two-strip cells.
+  // Reconstruct the original sequential bin number for stable output IDs.
+  if (volumeName.contains("_z_phys_") &&
+      stepPoint->GetTouchable()->GetHistoryDepth() >= 1) {
+    const G4int cellCopyNo = stepPoint->GetTouchable()->GetCopyNumber(1);
+    return layerBase + 2 * cellCopyNo + localCopyNo;
+  }
+
   // In the generated GARGOYLE geometry, placement copy numbers are already
   // global within their layer-specific ranges; preserve them exactly.
   if (localCopyNo >= layerBase) {
