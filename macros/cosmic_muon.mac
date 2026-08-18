@@ -4,9 +4,11 @@
 /gps/particle mu-
 /gps/pos/type Plane
 /gps/pos/shape Rectangle
-#/gps/pos/centre 290 0 -160 cm
-/gps/pos/centre 290 0 -50 cm
-#/gps/pos/centre 340 0 -160 cm
+# The curved model's longest straight chord is the 23.14 m lower section,
+# parallel to global Z. Its centerline midpoint is approximately
+# (x,z) = (0.033,-26.595) m. Place the unchanged source plane just outside
+# the +X face of the one-metre rock envelope, centered on that chord.
+/gps/pos/centre 293.3 0 -2659.5 cm
 /gps/pos/halfx 340 cm
 /gps/pos/halfy 575 cm #500cm
 #/gps/pos/halfx 10 cm
