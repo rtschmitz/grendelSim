@@ -84,6 +84,10 @@ The upper tunnel tracker consists of four tracker stations. The wall-adjacent st
 
 Volume IDs use one documented namespace. `0` is unknown, `1` is tunnel/world air, and `2` is rock. Veto IDs are `100` for the floor; `110--111` for the original right/left walls; and `120--121`, `130--131`, and `140--141` for the right/left wall extensions at 12, 24, and 36 cm. Phi tracker ranges are `1000--1401`, `2000--2401`, `3000--3401`, and `4000--4401` at the wall, 12, 24, and 36 cm. Corresponding one-centimetre z ranges are `10000--11799`, `20000--21799`, `30000--31799`, and `40000--41799`. Output schema version 5 stores these identifiers in `scint_copyNo`, `scint_originVolumeID`, and each selected track’s `initialVolumeID` and `finalVolumeID`; the previous volume-name string branches are removed.
 
+## Curved tunnel segment selection
+
+The curved tunnel is divided into representative geometry groups and selected before construction. Set `TunnelGeometry/EnabledGroups` in `inputData/config/Geometry/onepc.ini` (copied to `build/config`) to `full`, `straight`, `turn1`, or `turn2`; comma-separated selections such as `straight,turn1` are accepted and are merged into the smallest contiguous window containing those groups. `straight` is the long lower straight section used by the shifted cosmic test plane. `turn1` and `turn2` include the representative approach and exit chords around each bend. For temporary overrides, set `GRENDEL_TUNNEL_MODE` to the same value when launching `grendelSim`; the environment variable takes precedence over the config file. The selected interval is the geometry that is constructed and therefore also the geometry shown by visualization.
+
 ## Output
 
 Both workflows write a seed-tagged `Sim_<id>grendelSim.root` file in the build directory by default; `/run/fname` replaces that prefix. The `Events` tree uses standalone schema version 3 with one row per simulated event. No GRENDEL headers, shared library, ROOT dictionary, PCM, or rootmap is needed to read it.

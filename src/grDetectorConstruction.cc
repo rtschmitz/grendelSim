@@ -61,6 +61,8 @@
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ini_parser.hpp>
 
 #include "G4RunManager.hh"
 #include "G4LogicalBorderSurface.hh"
@@ -348,14 +350,52 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     }
 
     const char* tunnelModeEnv = std::getenv("GRENDEL_TUNNEL_MODE");
-    const G4String tunnelMode = tunnelModeEnv ? tunnelModeEnv : "full";
-    const G4bool straightTunnelMode = tunnelMode == "straight";
-    if (straightTunnelMode && tunnelStations.size() > 2) {
-        // The first representative chord is the longest straight lower section
-        // targeted by the overhead cosmic source. Retain its two endpoint rings
-        // and discard the rest of the centerline.
-        tunnelStations.resize(2);
-        tunnelChordCount = 1;
+    G4String tunnelMode = tunnelModeEnv ? tunnelModeEnv : "full";
+    if (!tunnelModeEnv) {
+        try {
+            boost::property_tree::ptree geometryConfig;
+            boost::property_tree::ini_parser::read_ini("config/Geometry/onepc.ini", geometryConfig);
+            tunnelMode = geometryConfig.get<std::string>("TunnelGeometry.EnabledGroups", tunnelMode);
+        } catch (const boost::property_tree::ptree_error&) {
+            /* Keep full-tunnel default when config is unavailable. */
+        }
+    }
+
+    G4int selectedFirstChord = 0;
+    G4int selectedLastChord = tunnelChordCount - 1;
+    if (tunnelMode != "full" && tunnelMode != "all") {
+        selectedFirstChord = tunnelChordCount;
+        selectedLastChord = -1;
+        std::stringstream groups(tunnelMode);
+        std::string group;
+        while (std::getline(groups, group, ',')) {
+            const std::size_t first = group.find_first_not_of(" \t");
+            const std::size_t last = group.find_last_not_of(" \t");
+            group = first == std::string::npos ? "" : group.substr(first, last - first + 1);
+            G4int groupFirst = -1;
+            G4int groupLast = -1;
+            if (group == "straight") { groupFirst = 0; groupLast = 0; }
+            else if (group == "turn1") { groupFirst = 5; groupLast = 10; }
+            else if (group == "turn2") { groupFirst = 10; groupLast = 14; }
+            else if (group == "full" || group == "all") { groupFirst = 0; groupLast = tunnelChordCount - 1; }
+            else if (!group.empty()) { G4cerr << "Unknown tunnel segment group '" << group << "'; ignoring it." << G4endl; }
+            if (groupFirst >= 0) {
+                selectedFirstChord = std::min(selectedFirstChord, groupFirst);
+                selectedLastChord = std::max(selectedLastChord, groupLast);
+            }
+        }
+        if (selectedLastChord < selectedFirstChord) {
+            G4cerr << "No valid tunnel segment groups selected; using full tunnel." << G4endl;
+            selectedFirstChord = 0;
+            selectedLastChord = tunnelChordCount - 1;
+        }
+    }
+    if (selectedFirstChord != 0 || selectedLastChord != tunnelChordCount - 1) {
+        std::vector<G4TwoVector> selectedStations(
+                tunnelStations.begin() + selectedFirstChord,
+                tunnelStations.begin() + selectedLastChord + 2);
+        tunnelStations.swap(selectedStations);
+        tunnelChordCount = selectedLastChord - selectedFirstChord + 1;
     }
 
     G4double constructedTunnelLength = 0.0;
@@ -845,7 +885,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     this->SetNLayer(12); this->SetNBarPerLayer(1);
     G4cout << "  curved detector active physical volumes: " << activeLogics.size() << G4endl;
     G4cout << "  tracker segmentation: 10 cm transverse and longitudinal" << G4endl;
-    G4cout << "  tunnel mode: " << (straightTunnelMode ? "straight" : "full") << G4endl;
+    G4cout << "  tunnel segment groups: " << tunnelMode << G4endl;
 
     if (verbose >= 0) {
         G4cout << "Curved GARGOYLE tunnel summary:" << G4endl;
