@@ -53,6 +53,7 @@
 #include "G4TessellatedSolid.hh"
 #include "G4TriangularFacet.hh"
 #include "G4QuadrangularFacet.hh"
+#include "G4GeomTools.hh"
 #include "G4Transform3D.hh"
 #include "G4Exception.hh"
 
@@ -200,7 +201,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     // Coordinates here are dimensionless source-image pixels.  The complete
     // visible centerline is scaled to 100 m below.
     // ---------------------------------------------------------------------
-    const G4double requestedTunnelPathLength = 100.0 * m;
+    const G4double requestedTunnelPathLength = 110.0 * m;
     std::vector<G4TwoVector> denseCenterlinePixels;
     denseCenterlinePixels.reserve(600);
 
@@ -271,20 +272,6 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         appendCenterlinePixel(176.0, 1030.0 - 94.0 * u);
     }
 
-    std::vector<G4double> denseCumulativeLength(
-            denseCenterlinePixels.size(), 0.0);
-    for (std::size_t i = 1; i < denseCenterlinePixels.size(); ++i) {
-        const G4double dx = denseCenterlinePixels[i].x()
-                          - denseCenterlinePixels[i - 1].x();
-        const G4double dz = denseCenterlinePixels[i].y()
-                          - denseCenterlinePixels[i - 1].y();
-        denseCumulativeLength[i] = denseCumulativeLength[i - 1]
-                                 + std::sqrt(dx * dx + dz * dz);
-    }
-    const G4double fittedLengthPixels = denseCumulativeLength.back();
-    const G4double pixelToLength =
-            requestedTunnelPathLength / fittedLengthPixels;
-
     // Centre the plan-view bounding box on the world origin.
     G4double centerlineMinX = denseCenterlinePixels.front().x();
     G4double centerlineMaxX = denseCenterlinePixels.front().x();
@@ -305,52 +292,61 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     const G4double centerlineOffsetZ =
             0.5 * (centerlineMinZ + centerlineMaxZ);
 
-    // Resample by arc length.  One-metre chords resolve the tightest ~7 m
-    // radius bends to roughly eight degrees per chord, while keeping the union
-    // at only about 100 nodes.
-    const G4double targetChordLength = 1.0 * m;
-    const G4int tunnelChordCount = static_cast<G4int>(
-            std::ceil(requestedTunnelPathLength / targetChordLength));
-    const G4double actualChordArcLength =
-            requestedTunnelPathLength / tunnelChordCount;
-    std::vector<G4TwoVector> tunnelStations;
-    tunnelStations.reserve(tunnelChordCount + 1);
-
-    std::size_t upperDenseIndex = 1;
-    for (G4int stationIndex = 0;
-         stationIndex <= tunnelChordCount;
-         ++stationIndex) {
-        const G4double requestedLength =
-                std::min(requestedTunnelPathLength,
-                         stationIndex * actualChordArcLength);
-        const G4double requestedPixelLength =
-                requestedLength / pixelToLength;
-
-        while (upperDenseIndex + 1 < denseCumulativeLength.size()
-               && denseCumulativeLength[upperDenseIndex]
-                  < requestedPixelLength) {
-            ++upperDenseIndex;
+    // Preserve the analytic joins, but allocate geometry only where the
+    // centerline actually bends. Straight pieces need one chord; the long
+    // transition uses five and each quarter-turn uses three. This produces
+    // 15 chords for the complete 110 m tunnel instead of 100 Boolean nodes.
+    std::vector<G4TwoVector> representativePixels;
+    auto appendRepresentativePixel = [&](G4double x, G4double z) {
+        if (!representativePixels.empty()) {
+            const G4double dx = x - representativePixels.back().x();
+            const G4double dz = z - representativePixels.back().y();
+            if (dx * dx + dz * dz < 1.0e-20) return;
         }
+        representativePixels.push_back(G4TwoVector(x, z));
+    };
+    for (G4int i = 0; i <= 1; ++i) {
+        const G4double u = static_cast<G4double>(i);
+        appendRepresentativePixel(0.0, 348.0 * u);
+    }
+    for (G4int i = 0; i <= 5; ++i) {
+        const G4double u = static_cast<G4double>(i) / 5.0;
+        const G4double q = tunnelSmoothstep5(u);
+        const G4double c = 1500.0 * u * u * u * (1.0-u) * (1.0-u) * (1.0-u);
+        appendRepresentativePixel(-177.0 * q - c, 348.0 + 430.0 * u);
+    }
+    appendRepresentativePixel(-177.0, 1031.0);
+    for (G4int i = 1; i <= 3; ++i) {
+        const G4double u = static_cast<G4double>(i) / 3.0;
+        const G4double theta = pi - 0.5 * pi * u;
+        appendRepresentativePixel(-60.0 + 117.0 * std::cos(theta),
+                                  1031.0 + 117.0 * std::sin(theta));
+    }
+    appendRepresentativePixel(62.0, 1145.0);
+    for (G4int i = 1; i <= 3; ++i) {
+        const G4double u = static_cast<G4double>(i) / 3.0;
+        const G4double theta = 0.5 * pi * (1.0 - u);
+        appendRepresentativePixel(62.0 + 114.0 * std::cos(theta),
+                                  1030.0 + 115.0 * std::sin(theta));
+    }
+    appendRepresentativePixel(176.0, 936.0);
 
-        const std::size_t lowerDenseIndex = upperDenseIndex - 1;
-        const G4double span = denseCumulativeLength[upperDenseIndex]
-                            - denseCumulativeLength[lowerDenseIndex];
-        const G4double fraction = (span > 0.0)
-                ? (requestedPixelLength
-                   - denseCumulativeLength[lowerDenseIndex]) / span
-                : 0.0;
-
-        const G4double xPixel =
-                denseCenterlinePixels[lowerDenseIndex].x()
-                + fraction * (denseCenterlinePixels[upperDenseIndex].x()
-                              - denseCenterlinePixels[lowerDenseIndex].x());
-        const G4double zPixel =
-                denseCenterlinePixels[lowerDenseIndex].y()
-                + fraction * (denseCenterlinePixels[upperDenseIndex].y()
-                              - denseCenterlinePixels[lowerDenseIndex].y());
-        tunnelStations.push_back(
-                G4TwoVector((xPixel - centerlineOffsetX) * pixelToLength,
-                            (zPixel - centerlineOffsetZ) * pixelToLength));
+    G4double representativeLengthPixels = 0.0;
+    for (std::size_t i = 1; i < representativePixels.size(); ++i) {
+        const G4double dx = representativePixels[i].x() - representativePixels[i-1].x();
+        const G4double dz = representativePixels[i].y() - representativePixels[i-1].y();
+        representativeLengthPixels += std::sqrt(dx * dx + dz * dz);
+    }
+    const G4double representativeScale =
+            requestedTunnelPathLength / representativeLengthPixels;
+    const G4int tunnelChordCount =
+            static_cast<G4int>(representativePixels.size()) - 1;
+    std::vector<G4TwoVector> tunnelStations;
+    tunnelStations.reserve(representativePixels.size());
+    for (std::size_t i = 0; i < representativePixels.size(); ++i) {
+        tunnelStations.push_back(G4TwoVector(
+                (representativePixels[i].x() - centerlineOffsetX) * representativeScale,
+                (representativePixels[i].y() - centerlineOffsetZ) * representativeScale));
     }
 
     // ---------------------------------------------------------------------
@@ -359,71 +355,69 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     // internal faces before navigation.  Voxelize() is essential for runtime.
     // ---------------------------------------------------------------------
     std::vector<G4double> chordAngles(tunnelChordCount, 0.0);
-    std::vector<G4double> chordLengths(tunnelChordCount, 0.0);
     for (G4int i = 0; i < tunnelChordCount; ++i) {
         const G4double dx = tunnelStations[i + 1].x()
                           - tunnelStations[i].x();
         const G4double dz = tunnelStations[i + 1].y()
                           - tunnelStations[i].y();
-        chordLengths[i] = std::sqrt(dx * dx + dz * dz);
         chordAngles[i] = std::atan2(dx, dz);
     }
 
-    auto wrappedAngleDifference = [](G4double a, G4double b) -> G4double {
-        return std::atan2(std::sin(a - b), std::cos(a - b));
-    };
-
-    G4MultiUnion* curvedTunnelSolid =
-            new G4MultiUnion("gargoyle_curved_tunnel_air_solid");
+    // A single closed swept polyhedron avoids the expensive visualization-time
+    // Boolean polygonization performed by G4MultiUnion::CreatePolyhedron().
+    G4TessellatedSolid* curvedTunnelSolid =
+            new G4TessellatedSolid("gargoyle_curved_tunnel_air_solid");
     const G4double maximumLateralHalfWidth =
             std::max(tunnelHalfFloor, tunnelHalfArch);
-    const G4double minimumJointOverlap = 1.0 * mm;
 
-    for (G4int i = 0; i < tunnelChordCount; ++i) {
-        G4double overlap = minimumJointOverlap;
-        if (i > 0) {
-            const G4double turn = std::fabs(
-                    wrappedAngleDifference(chordAngles[i],
-                                           chordAngles[i - 1]));
-            overlap = std::max(overlap,
-                    maximumLateralHalfWidth * std::tan(0.5 * turn)
-                    + minimumJointOverlap);
-        }
-        if (i + 1 < tunnelChordCount) {
-            const G4double turn = std::fabs(
-                    wrappedAngleDifference(chordAngles[i + 1],
-                                           chordAngles[i]));
-            overlap = std::max(overlap,
-                    maximumLateralHalfWidth * std::tan(0.5 * turn)
-                    + minimumJointOverlap);
-        }
-        overlap = std::min(overlap, 0.25 * chordLengths[i]);
-
-        std::ostringstream chordSolidName;
-        chordSolidName << "gargoyle_tunnel_chord_solid_" << i;
-        G4ExtrudedSolid* chordSolid = new G4ExtrudedSolid(
-                chordSolidName.str(),
-                curvedTunnelProfile,
-                0.5 * chordLengths[i] + overlap,
-                G4TwoVector(0.0, 0.0), 1.0,
-                G4TwoVector(0.0, 0.0), 1.0);
-
-        const G4double midpointX =
-                0.5 * (tunnelStations[i].x()
-                       + tunnelStations[i + 1].x());
-        const G4double midpointZ =
-                0.5 * (tunnelStations[i].y()
-                       + tunnelStations[i + 1].y());
-        G4RotationMatrix chordRotation;
-        chordRotation.rotateY(chordAngles[i]);
-        // Keep the transform as an lvalue for compatibility with Geant4 10.x,
-        // whose G4MultiUnion::AddNode signature used a non-const reference.
-        G4Transform3D chordTransform(
-                chordRotation,
-                G4ThreeVector(midpointX, 0.0, midpointZ));
-        curvedTunnelSolid->AddNode(*chordSolid, chordTransform);
+    std::vector<G4double> stationAngles(tunnelStations.size(), 0.0);
+    stationAngles.front() = chordAngles.front();
+    stationAngles.back() = chordAngles.back();
+    for (std::size_t i = 1; i + 1 < tunnelStations.size(); ++i) {
+        stationAngles[i] = std::atan2(
+                std::sin(chordAngles[i-1]) + std::sin(chordAngles[i]),
+                std::cos(chordAngles[i-1]) + std::cos(chordAngles[i]));
     }
-    curvedTunnelSolid->Voxelize();
+
+    typedef std::vector<G4ThreeVector> TunnelRing;
+    std::vector<TunnelRing> tunnelRings;
+    tunnelRings.reserve(tunnelStations.size());
+    for (std::size_t station = 0; station < tunnelStations.size(); ++station) {
+        TunnelRing ring;
+        ring.reserve(curvedTunnelProfile.size());
+        const G4double c = std::cos(stationAngles[station]);
+        const G4double sineAngle = std::sin(stationAngles[station]);
+        for (std::size_t vertex = 0; vertex < curvedTunnelProfile.size(); ++vertex) {
+            const G4double lateral = curvedTunnelProfile[vertex].x();
+            ring.push_back(G4ThreeVector(
+                    tunnelStations[station].x() + c * lateral,
+                    curvedTunnelProfile[vertex].y(),
+                    tunnelStations[station].y() - sineAngle * lateral));
+        }
+        tunnelRings.push_back(ring);
+    }
+
+    const std::size_t profileVertices = curvedTunnelProfile.size();
+    for (std::size_t station = 0; station + 1 < tunnelRings.size(); ++station) {
+        for (std::size_t vertex = 0; vertex < profileVertices; ++vertex) {
+            const std::size_t next = (vertex + 1) % profileVertices;
+            curvedTunnelSolid->AddFacet(new G4TriangularFacet(
+                    tunnelRings[station][vertex], tunnelRings[station][next],
+                    tunnelRings[station+1][next], ABSOLUTE));
+            curvedTunnelSolid->AddFacet(new G4TriangularFacet(
+                    tunnelRings[station][vertex], tunnelRings[station+1][next],
+                    tunnelRings[station+1][vertex], ABSOLUTE));
+        }
+    }
+    for (std::size_t vertex = 1; vertex + 1 < profileVertices; ++vertex) {
+        curvedTunnelSolid->AddFacet(new G4TriangularFacet(
+                tunnelRings.front()[0], tunnelRings.front()[vertex+1],
+                tunnelRings.front()[vertex], ABSOLUTE));
+        curvedTunnelSolid->AddFacet(new G4TriangularFacet(
+                tunnelRings.back()[0], tunnelRings.back()[vertex],
+                tunnelRings.back()[vertex+1], ABSOLUTE));
+    }
+    curvedTunnelSolid->SetSolidClosed(true);
 
     // Concrete world with a single air daughter is both physically natural
     // and faster than subtracting the tunnel from a large rock solid.
@@ -522,25 +516,66 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         for (std::size_t i = outside.size(); i > 0; --i) profile.push_back(outside[i - 1]);
         return profile;
     };
-    auto sweepProfile = [&](const G4String& name, const CrossPath& profile) {
-        G4MultiUnion* solid = new G4MultiUnion(name + "_solid");
-        for (G4int i = 0; i < tunnelChordCount; ++i) {
-            G4double overlap = minimumJointOverlap;
-            if (i > 0) overlap = std::max(overlap, maximumLateralHalfWidth *
-                std::tan(0.5 * std::fabs(wrappedAngleDifference(chordAngles[i], chordAngles[i-1]))) + minimumJointOverlap);
-            if (i + 1 < tunnelChordCount) overlap = std::max(overlap, maximumLateralHalfWidth *
-                std::tan(0.5 * std::fabs(wrappedAngleDifference(chordAngles[i+1], chordAngles[i]))) + minimumJointOverlap);
-            overlap = std::min(overlap, 0.25 * chordLengths[i]);
-            std::ostringstream nodeName; nodeName << name << "_node_" << i;
-            G4ExtrudedSolid* node = new G4ExtrudedSolid(nodeName.str(), profile,
-                0.5 * chordLengths[i] + overlap, G4TwoVector(), 1.0, G4TwoVector(), 1.0);
-            G4RotationMatrix rotation; rotation.rotateY(chordAngles[i]);
-            G4Transform3D transform(rotation, G4ThreeVector(
-                0.5 * (tunnelStations[i].x() + tunnelStations[i+1].x()), 0.0,
-                0.5 * (tunnelStations[i].y() + tunnelStations[i+1].y())));
-            solid->AddNode(*node, transform);
+    auto sweepProfile = [&](const G4String& name, const CrossPath& inputProfile) {
+        CrossPath profile = inputProfile;
+        G4double signedArea = 0.0;
+        for (std::size_t i = 0; i < profile.size(); ++i) {
+            const std::size_t next = (i + 1) % profile.size();
+            signedArea += profile[i].x() * profile[next].y()
+                        - profile[next].x() * profile[i].y();
         }
-        solid->Voxelize();
+        if (signedArea < 0.0) std::reverse(profile.begin(), profile.end());
+
+        G4TessellatedSolid* solid = new G4TessellatedSolid(name + "_solid");
+        std::vector<TunnelRing> rings;
+        rings.reserve(tunnelStations.size());
+        for (std::size_t station = 0; station < tunnelStations.size(); ++station) {
+            TunnelRing ring;
+            ring.reserve(profile.size());
+            const G4double cosineAngle = std::cos(stationAngles[station]);
+            const G4double sineAngle = std::sin(stationAngles[station]);
+            for (std::size_t vertex = 0; vertex < profile.size(); ++vertex) {
+                const G4double lateral = profile[vertex].x();
+                ring.push_back(G4ThreeVector(
+                        tunnelStations[station].x() + cosineAngle * lateral,
+                        profile[vertex].y(),
+                        tunnelStations[station].y() - sineAngle * lateral));
+            }
+            rings.push_back(ring);
+        }
+        for (std::size_t station = 0; station + 1 < rings.size(); ++station) {
+            for (std::size_t vertex = 0; vertex < profile.size(); ++vertex) {
+                const std::size_t next = (vertex + 1) % profile.size();
+                solid->AddFacet(new G4TriangularFacet(
+                        rings[station][vertex], rings[station][next],
+                        rings[station+1][next], ABSOLUTE));
+                solid->AddFacet(new G4TriangularFacet(
+                        rings[station][vertex], rings[station+1][next],
+                        rings[station+1][vertex], ABSOLUTE));
+            }
+        }
+        std::vector<G4int> capTriangles;
+        if (!G4GeomTools::TriangulatePolygon(profile, capTriangles)) {
+            G4Exception("grDetectorConstruction::SetupGeometry", "InvalidShellProfile",
+                        FatalException, "Could not triangulate detector shell profile.");
+        }
+        for (std::size_t i = 0; i + 2 < capTriangles.size(); i += 3) {
+            const G4int a = capTriangles[i];
+            const G4int b = capTriangles[i+1];
+            const G4int c = capTriangles[i+2];
+            const G4double triangleArea =
+                    (profile[b].x() - profile[a].x()) * (profile[c].y() - profile[a].y())
+                  - (profile[b].y() - profile[a].y()) * (profile[c].x() - profile[a].x());
+            const G4int forwardB = triangleArea > 0.0 ? b : c;
+            const G4int forwardC = triangleArea > 0.0 ? c : b;
+            solid->AddFacet(new G4TriangularFacet(
+                    rings.front()[a], rings.front()[forwardC],
+                    rings.front()[forwardB], ABSOLUTE));
+            solid->AddFacet(new G4TriangularFacet(
+                    rings.back()[a], rings.back()[forwardB],
+                    rings.back()[forwardC], ABSOLUTE));
+        }
+        solid->SetSolidClosed(true);
         return solid;
     };
     std::vector<G4LogicalVolume*> activeLogics;
@@ -556,10 +591,14 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         activeLogics.push_back(logic);
     };
 
+    const G4double wallGap = 0.1 * cm, floorThickness = 2.0 * cm;
+    const G4double sublayerThickness = 1.5 * cm, sublayerGap = 1.0 * mm;
+    const G4double trackerThickness = 2.0 * sublayerThickness + sublayerGap;
     const G4double midWallY = tunnelFloorY + 0.5 * tunnelWallHeight;
+    const G4double wallBottomY = tunnelFloorY + wallGap + floorThickness;
     CrossPath floorPath; floorPath.push_back(G4TwoVector(-tunnelHalfFloor, tunnelFloorY)); floorPath.push_back(G4TwoVector(tunnelHalfFloor, tunnelFloorY));
-    CrossPath rightWallPath; rightWallPath.push_back(G4TwoVector(tunnelHalfFloor, tunnelFloorY)); rightWallPath.push_back(G4TwoVector(tunnelHalfArch, midWallY));
-    CrossPath leftWallPath; leftWallPath.push_back(G4TwoVector(-tunnelHalfArch, midWallY)); leftWallPath.push_back(G4TwoVector(-tunnelHalfFloor, tunnelFloorY));
+    CrossPath rightWallPath; rightWallPath.push_back(G4TwoVector(tunnelHalfFloor, wallBottomY)); rightWallPath.push_back(G4TwoVector(tunnelHalfArch, midWallY));
+    CrossPath leftWallPath; leftWallPath.push_back(G4TwoVector(-tunnelHalfArch, midWallY)); leftWallPath.push_back(G4TwoVector(-tunnelHalfFloor, wallBottomY));
     CrossPath upperPath; upperPath.push_back(G4TwoVector(tunnelHalfArch, midWallY)); upperPath.push_back(G4TwoVector(tunnelHalfArch, tunnelSpringY));
     for (G4int i = 1; i < tunnelArchSegments; ++i) {
         const G4double angle = pi * i / tunnelArchSegments;
@@ -567,9 +606,6 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     }
     upperPath.push_back(G4TwoVector(-tunnelHalfArch, tunnelSpringY)); upperPath.push_back(G4TwoVector(-tunnelHalfArch, midWallY));
 
-    const G4double wallGap = 0.1 * cm, floorThickness = 2.0 * cm;
-    const G4double sublayerThickness = 1.5 * cm, sublayerGap = 1.0 * mm;
-    const G4double trackerThickness = 2.0 * sublayerThickness + sublayerGap;
     placeActive("gargoyle_scint_phys_floor", bandProfile(floorPath, wallGap, floorThickness), 100, G4Colour::Cyan());
     placeActive("gargoyle_scint_phys_walls_right", bandProfile(rightWallPath, wallGap, trackerThickness), 110, G4Colour::Cyan());
     placeActive("gargoyle_scint_phys_walls_left", bandProfile(leftWallPath, wallGap, trackerThickness), 111, G4Colour::Cyan());
@@ -602,9 +638,8 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         G4cout << "Curved GARGOYLE tunnel summary:" << G4endl;
         G4cout << "  centerline length: "
                << G4BestUnit(requestedTunnelPathLength, "Length") << G4endl;
-        G4cout << "  centerline chords: " << tunnelChordCount << G4endl;
-        G4cout << "  nominal chord arc length: "
-               << G4BestUnit(actualChordArcLength, "Length") << G4endl;
+        G4cout << "  representative centerline chords: "
+               << tunnelChordCount << G4endl;
         G4cout << "  cross-section: "
                << G4BestUnit(tunnelFloorWidth, "Length") << " wide x "
                << G4BestUnit(tunnelHeight, "Length") << " high" << G4endl;
