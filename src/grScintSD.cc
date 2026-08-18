@@ -32,10 +32,10 @@ namespace {
 G4bool IsGargoyleActiveVolume(const G4String& volumeName)
 {
   return volumeName.contains("gargoyle_scint_phys") ||
-         volumeName.contains("gargoyle_si_layer1_phys") ||
-         volumeName.contains("gargoyle_si_layer2_phys") ||
-         volumeName.contains("gargoyle_si_layer3_phys") ||
-         volumeName.contains("gargoyle_si_layer5_phys") ||
+         volumeName.contains("gargoyle_si_layer1") ||
+         volumeName.contains("gargoyle_si_layer2") ||
+         volumeName.contains("gargoyle_si_layer3") ||
+         volumeName.contains("gargoyle_si_layer5") ||
          volumeName.contains("gargoyle_si_layer1_z_phys") ||
          volumeName.contains("gargoyle_si_layer2_z_phys") ||
          volumeName.contains("gargoyle_si_layer3_z_phys") ||
