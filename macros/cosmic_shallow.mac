@@ -7,7 +7,7 @@
 # This macro targets the 'shallow' curved-tunnel group; select it with GRENDEL_TUNNEL_MODE=shallow.
 # The source plane remains above the rock envelope with the same dimensions.
 # horizontal in X-Z, with the GPS normal oriented so muons travel downward.
-/gps/pos/centre -585.086 300 -73.136 cm
+/gps/pos/centre -794.0 300 -73.0 cm
 /gps/pos/halfx 340 cm
 /gps/pos/halfy 575 cm #500cm
 #/gps/pos/halfx 10 cm

@@ -7,7 +7,7 @@
 # This macro targets the 'turn1' curved-tunnel group; select it with GRENDEL_TUNNEL_MODE=turn1.
 # The source plane remains above the rock envelope with the same dimensions.
 # horizontal in X-Z, with the GPS normal oriented so muons travel downward.
-/gps/pos/centre -378.976 300 2300.451 cm
+/gps/pos/centre -1121.4 300 3232.9 cm
 /gps/pos/halfx 340 cm
 /gps/pos/halfy 575 cm #500cm
 #/gps/pos/halfx 10 cm
@@ -239,4 +239,4 @@
 #/gps/ene/mono 3 GeV
 
 #/run/fname /home/users/ryan/GRENDELDemoSim/datacosmicmuons/tempdir0/
-/run/beamOn 10000
+/run/beamOn 10
