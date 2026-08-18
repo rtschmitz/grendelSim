@@ -79,6 +79,7 @@
 #include "G4PVPlacement.hh"
 #include "G4PVReplica.hh"
 #include "G4VPVParameterisation.hh"
+#include "G4PVParameterised.hh"
 #include "globals.hh"
 #include "G4SolidStore.hh"
 #include "G4LogicalVolumeStore.hh"
@@ -122,6 +123,43 @@ G4VPhysicalVolume* grDetectorConstruction::Construct() {
 }
 
 //==============================================================================
+
+class grParameterizedExtrudedSolid : public G4ExtrudedSolid {
+  public:
+    grParameterizedExtrudedSolid(const G4String& name,
+                                 const std::vector<G4TwoVector>& polygon,
+                                 G4double halfZ)
+      : G4ExtrudedSolid(name, polygon, halfZ, G4TwoVector(), 1.0,
+                        G4TwoVector(), 1.0) {}
+    void ComputeDimensions(G4VPVParameterisation*, const G4int,
+                           const G4VPhysicalVolume*) override {}
+};
+
+class grLongitudinalParameterisation : public G4VPVParameterisation {
+  public:
+    grLongitudinalParameterisation(const std::vector<G4ThreeVector>& centers,
+                                   const std::vector<G4double>& angles,
+                                   G4int copyBase)
+      : fCenters(centers), fAngles(angles), fCopyBase(copyBase) {}
+
+    G4VSolid* ComputeSolid(const G4int, G4VPhysicalVolume* physical) override {
+      return physical->GetLogicalVolume()->GetSolid();
+    }
+
+    void ComputeTransformation(const G4int copyNo,
+                               G4VPhysicalVolume* physical) const override {
+      physical->SetTranslation(fCenters[copyNo]);
+      G4RotationMatrix* rotation = new G4RotationMatrix();
+      rotation->rotateY(fAngles[copyNo]);
+      physical->SetRotation(rotation);
+      physical->SetCopyNo(fCopyBase + copyNo);
+    }
+
+  private:
+    std::vector<G4ThreeVector> fCenters;
+    std::vector<G4double> fAngles;
+    G4int fCopyBase;
+};
 
 G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
 
@@ -835,25 +873,30 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
             cellCenters.push_back(centerAtDistance((strip + 0.5) * longitudinalWidth, angle));
             cellAngles.push_back(angle);
         }
-        std::ostringstream zSolidName; zSolidName << zName.str() << "_parameterised_solid";
-        G4ExtrudedSolid* longitudinalSolid = new G4ExtrudedSolid(
-            zSolidName.str(), longitudinalProfile, 0.5 * longitudinalWidth,
-            G4TwoVector(), 1.0, G4TwoVector(), 1.0);
+        std::ostringstream zMotherName; zMotherName << zName.str() << "_mother";
+        G4LogicalVolume* longitudinalMotherLogic = new G4LogicalVolume(
+            sweepProfile(zMotherName.str(), longitudinalProfile), tunnelAir,
+            zMotherName.str() + "_logic", 0, 0, 0);
+        G4VisAttributes* motherVis = new G4VisAttributes();
+        motherVis->SetVisibility(false);
+        longitudinalMotherLogic->SetVisAttributes(motherVis);
+        new G4PVPlacement(0, G4ThreeVector(), longitudinalMotherLogic,
+                          zMotherName.str(), curvedTunnelLogic, false,
+                          zIDs[station], false);
+        std::ostringstream zSolidName; zSolidName << zName.str() << "_shared_solid";
+        G4ExtrudedSolid* longitudinalSolid = new grParameterizedExtrudedSolid(
+            zSolidName.str(), longitudinalProfile, 0.5 * longitudinalWidth);
         G4LogicalVolume* longitudinalLogic = new G4LogicalVolume(
             longitudinalSolid, matPlScin, zName.str() + "_logic", 0, 0, 0);
         G4VisAttributes* longitudinalVis = new G4VisAttributes(zColours[station]);
         longitudinalVis->SetVisibility(true);
         longitudinalVis->SetForceSolid(true);
         longitudinalLogic->SetVisAttributes(longitudinalVis);
-
-        for (G4int strip = 0; strip < longitudinalCount; ++strip) {
-            G4RotationMatrix* rotation = new G4RotationMatrix();
-            rotation->rotateY(cellAngles[strip]);
-            std::ostringstream stripName; stripName << zName.str() << "_segment_" << strip;
-            new G4PVPlacement(rotation, cellCenters[strip], longitudinalLogic,
-                              stripName.str(), curvedTunnelLogic, false,
-                              zIDs[station] + strip, false);
-        }
+        grLongitudinalParameterisation* parameterisation =
+            new grLongitudinalParameterisation(cellCenters, cellAngles, zIDs[station]);
+        new G4PVParameterised(zName.str(), longitudinalLogic,
+                              longitudinalMotherLogic, kZAxis,
+                              longitudinalCount, parameterisation, false);
         activeLogics.push_back(longitudinalLogic);
         if (station > 0) {
             const G4int wallBase = 100 + 10 * (station + 1);
