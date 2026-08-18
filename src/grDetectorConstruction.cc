@@ -508,7 +508,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     // Finite one-metre rock envelope around the curved tunnel. Build the
     // annular sweep directly so visualization does not have to polygonize a
     // subtraction solid.
-    const G4double concreteThickness = 1.0 * m;
+    const G4double concreteThickness = fastStraight ? 0.5 * m : 1.0 * m;
     auto cross2D = [](const G4TwoVector& a, const G4TwoVector& b) {
         return a.x() * b.y() - a.y() * b.x();
     };
@@ -876,8 +876,10 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         G4VisAttributes* vis = new G4VisAttributes(colour);
         vis->SetVisibility(true); vis->SetForceSolid(true);
         logic->SetVisAttributes(vis);
-        new G4PVPlacement(0, G4ThreeVector(), logic, name + "_phys",
-            curvedTunnelLogic, false, copyNo, false);
+        new G4PVPlacement(fastStraight ? fastRotation : 0,
+            fastStraight ? fastMidpoint : G4ThreeVector(), logic, name + "_phys",
+            fastStraight ? curvedWorldLogic : curvedTunnelLogic,
+            false, copyNo, false);
         activeLogics.push_back(logic);
     };
     auto alternateColour = [](const G4Colour& colour) {
@@ -908,8 +910,11 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         G4VisAttributes* envelopeVis = new G4VisAttributes();
         envelopeVis->SetVisibility(false);
         envelopeLogic->SetVisAttributes(envelopeVis);
-        new G4PVPlacement(0, G4ThreeVector(), envelopeLogic,
-                baseName + "_envelope_phys", curvedTunnelLogic, false, 0, false);
+        new G4PVPlacement(fastStraight ? fastRotation : 0,
+                fastStraight ? fastMidpoint : G4ThreeVector(), envelopeLogic,
+                baseName + "_envelope_phys",
+                fastStraight ? curvedWorldLogic : curvedTunnelLogic,
+                false, 0, false);
         const G4int cellCount = evenSegmentCount / 2;
         const G4double cellWidth = 2.0 * actualWidth;
         G4VSolid* cellSolid = makeFastExtrudedSolid(
