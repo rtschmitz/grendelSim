@@ -377,8 +377,6 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
             if (group == "0" || group == "first") { groupFirst = 0; groupLast = 0; }
             else if (group == "1") { groupFirst = 1; groupLast = 1; }
             else if (group == "straight") { groupFirst = 0; groupLast = 1; }
-            if (group == "straight") { groupFirst = 0; groupLast = 1; }
->>>>>>> parent of 74ebd74 (Share curved longitudinal tracker cell geometry)
             else if (group == "shallow") { groupFirst = 1; groupLast = 5; }
             else if (group == "turn1") { groupFirst = 5; groupLast = 10; }
             else if (group == "turn2") { groupFirst = 10; groupLast = 14; }
