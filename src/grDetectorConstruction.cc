@@ -59,6 +59,7 @@
 #include <vector>
 #include <utility>
 #include <cmath>
+#include <cstdlib>
 #include <algorithm>
 
 #include "G4RunManager.hh"
@@ -336,7 +337,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     }
     const G4double representativeScale =
             requestedTunnelPathLength / representativeLengthPixels;
-    const G4int tunnelChordCount =
+    G4int tunnelChordCount =
             static_cast<G4int>(representativePixels.size()) - 1;
     std::vector<G4TwoVector> tunnelStations;
     tunnelStations.reserve(representativePixels.size());
@@ -344,6 +345,24 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         tunnelStations.push_back(G4TwoVector(
                 (representativePixels[i].x() - centerlineOffsetX) * representativeScale,
                 (representativePixels[i].y() - centerlineOffsetZ) * representativeScale));
+    }
+
+    const char* tunnelModeEnv = std::getenv("GRENDEL_TUNNEL_MODE");
+    const G4String tunnelMode = tunnelModeEnv ? tunnelModeEnv : "full";
+    const G4bool straightTunnelMode = tunnelMode == "straight";
+    if (straightTunnelMode && tunnelStations.size() > 2) {
+        // The first representative chord is the longest straight lower section
+        // targeted by the overhead cosmic source. Retain its two endpoint rings
+        // and discard the rest of the centerline.
+        tunnelStations.resize(2);
+        tunnelChordCount = 1;
+    }
+
+    G4double constructedTunnelLength = 0.0;
+    for (std::size_t i = 1; i < tunnelStations.size(); ++i) {
+        const G4double dx = tunnelStations[i].x() - tunnelStations[i - 1].x();
+        const G4double dz = tunnelStations[i].y() - tunnelStations[i - 1].y();
+        constructedTunnelLength += std::sqrt(dx * dx + dz * dz);
     }
 
     // ---------------------------------------------------------------------
@@ -826,11 +845,12 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     this->SetNLayer(12); this->SetNBarPerLayer(1);
     G4cout << "  curved detector active physical volumes: " << activeLogics.size() << G4endl;
     G4cout << "  tracker segmentation: 10 cm transverse and longitudinal" << G4endl;
+    G4cout << "  tunnel mode: " << (straightTunnelMode ? "straight" : "full") << G4endl;
 
     if (verbose >= 0) {
         G4cout << "Curved GARGOYLE tunnel summary:" << G4endl;
         G4cout << "  centerline length: "
-               << G4BestUnit(requestedTunnelPathLength, "Length") << G4endl;
+               << G4BestUnit(constructedTunnelLength, "Length") << G4endl;
         G4cout << "  representative centerline chords: "
                << tunnelChordCount << G4endl;
         G4cout << "  cross-section: "
