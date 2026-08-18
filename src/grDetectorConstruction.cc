@@ -656,7 +656,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         // it). Give the inexpensive straight navigation mother a small
         // allowance so those physical daughter volumes remain contained.
         std::vector<G4TwoVector> fastTunnelProfile = curvedTunnelProfile;
-        const G4double navigationAllowance = 10.0 * cm;
+        const G4double navigationAllowance = 4.0 * cm;
         for (std::size_t i = 0; i < fastTunnelProfile.size(); ++i) {
             const G4double x = fastTunnelProfile[i].x();
             fastTunnelProfile[i].setX(x + (x >= 0.0 ? navigationAllowance : -navigationAllowance));
