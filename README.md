@@ -45,6 +45,15 @@ At the Geant4 prompt, load the visualization setup and generate events:
 The selected Geant4 installation must have an OpenGL visualization driver. Headless batch installations can still be built with `-DGRENDEL_WITH_UIVIS=OFF`, but zero-argument interactive mode is unavailable in that build.
 
 ## Cosmic-muon workflow
+Dedicated curved-tunnel test macros are provided for each geometry group. Set the matching group before running (the environment override takes precedence over the config file):
+
+```sh
+GRENDEL_TUNNEL_MODE=straight ./grendelSim cosmic ../macros/cosmic_straight.mac
+GRENDEL_TUNNEL_MODE=shallow ./grendelSim cosmic ../macros/cosmic_shallow.mac
+GRENDEL_TUNNEL_MODE=turn1 ./grendelSim cosmic ../macros/cosmic_turn1.mac
+GRENDEL_TUNNEL_MODE=turn2 ./grendelSim cosmic ../macros/cosmic_turn2.mac
+```
+
 
 Entry point: `run_cosmic.sh`. It builds the project and runs 10 events from `macros/cosmic_muon.mac`:
 

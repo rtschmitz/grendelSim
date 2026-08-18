@@ -374,7 +374,8 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
             group = first == std::string::npos ? "" : group.substr(first, last - first + 1);
             G4int groupFirst = -1;
             G4int groupLast = -1;
-            if (group == "straight") { groupFirst = 0; groupLast = 0; }
+            if (group == "straight") { groupFirst = 0; groupLast = 1; }
+            else if (group == "shallow") { groupFirst = 1; groupLast = 5; }
             else if (group == "turn1") { groupFirst = 5; groupLast = 10; }
             else if (group == "turn2") { groupFirst = 10; groupLast = 14; }
             else if (group == "full" || group == "all") { groupFirst = 0; groupLast = tunnelChordCount - 1; }
