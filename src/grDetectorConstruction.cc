@@ -79,6 +79,7 @@
 #include "G4PVPlacement.hh"
 #include "G4PVReplica.hh"
 #include "G4VPVParameterisation.hh"
+#include "G4PVParameterised.hh"
 #include "globals.hh"
 #include "G4SolidStore.hh"
 #include "G4LogicalVolumeStore.hh"
@@ -376,6 +377,8 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
             if (group == "0" || group == "first") { groupFirst = 0; groupLast = 0; }
             else if (group == "1") { groupFirst = 1; groupLast = 1; }
             else if (group == "straight") { groupFirst = 0; groupLast = 1; }
+            if (group == "straight") { groupFirst = 0; groupLast = 1; }
+>>>>>>> parent of 74ebd74 (Share curved longitudinal tracker cell geometry)
             else if (group == "shallow") { groupFirst = 1; groupLast = 5; }
             else if (group == "turn1") { groupFirst = 5; groupLast = 10; }
             else if (group == "turn2") { groupFirst = 10; groupLast = 14; }
@@ -747,6 +750,54 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         tunnelStationDistance[station] = tunnelStationDistance[station - 1]
                                        + std::sqrt(dx * dx + dz * dz);
     }
+    auto interpolatedRing = [&](const CrossPath& profile, G4double distance) {
+        std::size_t chord = 0;
+        while (chord + 2 < tunnelStationDistance.size()
+               && distance > tunnelStationDistance[chord + 1]) ++chord;
+        const G4double chordLength = tunnelStationDistance[chord + 1] - tunnelStationDistance[chord];
+        const G4double fraction = chordLength > 0.0
+                ? (distance - tunnelStationDistance[chord]) / chordLength : 0.0;
+        const G4double x = tunnelStations[chord].x() + fraction * (tunnelStations[chord + 1].x() - tunnelStations[chord].x());
+        const G4double z = tunnelStations[chord].y() + fraction * (tunnelStations[chord + 1].y() - tunnelStations[chord].y());
+        const G4double angle = stationAngles[chord] + fraction * (stationAngles[chord + 1] - stationAngles[chord]);
+        TunnelRing ring; ring.reserve(profile.size());
+        for (std::size_t vertex = 0; vertex < profile.size(); ++vertex) {
+            const G4double lateral = profile[vertex].x();
+            ring.push_back(G4ThreeVector(x + std::cos(angle) * lateral, profile[vertex].y(), z - std::sin(angle) * lateral));
+        }
+        return ring;
+    };
+    auto sweepProfileInterval = [&](const G4String& name, const CrossPath& inputProfile,
+                                    G4double startDistance, G4double endDistance) {
+        CrossPath profile = inputProfile;
+        G4double signedArea = 0.0;
+        for (std::size_t i = 0; i < profile.size(); ++i) {
+            const std::size_t next = (i + 1) % profile.size();
+            signedArea += profile[i].x() * profile[next].y() - profile[next].x() * profile[i].y();
+        }
+        if (signedArea < 0.0) std::reverse(profile.begin(), profile.end());
+        const TunnelRing first = interpolatedRing(profile, startDistance);
+        const TunnelRing last = interpolatedRing(profile, endDistance);
+        G4TessellatedSolid* solid = new G4TessellatedSolid(name + "_solid");
+        for (std::size_t vertex = 0; vertex < profile.size(); ++vertex) {
+            const std::size_t next = (vertex + 1) % profile.size();
+            solid->AddFacet(new G4TriangularFacet(first[vertex], first[next], last[next], ABSOLUTE));
+            solid->AddFacet(new G4TriangularFacet(first[vertex], last[next], last[vertex], ABSOLUTE));
+        }
+        std::vector<G4int> capTriangles;
+        if (!G4GeomTools::TriangulatePolygon(profile, capTriangles))
+            G4Exception("grDetectorConstruction::SetupGeometry", "InvalidStripProfile", FatalException, "Could not triangulate tracker strip profile.");
+        for (std::size_t i = 0; i + 2 < capTriangles.size(); i += 3) {
+            const G4int a = capTriangles[i], b = capTriangles[i + 1], c = capTriangles[i + 2];
+            const G4double area = (profile[b].x() - profile[a].x()) * (profile[c].y() - profile[a].y())
+                                - (profile[b].y() - profile[a].y()) * (profile[c].x() - profile[a].x());
+            const G4int forwardB = area > 0.0 ? b : c, forwardC = area > 0.0 ? c : b;
+            solid->AddFacet(new G4TriangularFacet(first[a], first[forwardC], first[forwardB], ABSOLUTE));
+            solid->AddFacet(new G4TriangularFacet(last[a], last[forwardB], last[forwardC], ABSOLUTE));
+        }
+        solid->SetSolidClosed(true);
+        return solid;
+    };
     std::vector<G4LogicalVolume*> activeLogics;
     auto placeActive = [&](const G4String& name, const CrossPath& profile,
                            G4int copyNo, const G4Colour& colour) {
@@ -802,17 +853,6 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     const G4int zIDs[4] = {100000, 200000, 300000, 400000};
     const G4Colour phiColours[4] = {G4Colour(0.1,0.8,0.1,.75), G4Colour(0.2,.85,.5,.75), G4Colour(.9,.9,.1,.75), G4Colour(.95,.55,.2,.75)};
     const G4Colour zColours[4] = {G4Colour(.1,.55,.95,.75), G4Colour(.2,.65,.95,.75), G4Colour(.95,.45,.1,.75), G4Colour(.95,.25,.55,.75)};
-    auto centerAtDistance = [&](G4double distance, G4double& angle) {
-        std::size_t chord = 0;
-        while (chord + 2 < tunnelStationDistance.size() && distance > tunnelStationDistance[chord + 1]) ++chord;
-        const G4double chordLength = tunnelStationDistance[chord + 1] - tunnelStationDistance[chord];
-        const G4double fraction = chordLength > 0.0 ? (distance - tunnelStationDistance[chord]) / chordLength : 0.0;
-        angle = stationAngles[chord] + fraction * (stationAngles[chord + 1] - stationAngles[chord]);
-        return G4ThreeVector(
-            tunnelStations[chord].x() + fraction * (tunnelStations[chord + 1].x() - tunnelStations[chord].x()),
-            0.0,
-            tunnelStations[chord].y() + fraction * (tunnelStations[chord + 1].y() - tunnelStations[chord].y()));
-    };
     for (G4int station = 0; station < 4; ++station) {
         const G4double base = station == 0 ? wallGap : wallGap + trackerThickness + stationGaps[station];
         std::ostringstream phiName, zName; phiName << "gargoyle_si_layer" << layerNames[station]; zName << phiName.str() << "_z";
@@ -826,35 +866,16 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         const CrossPath longitudinalProfile = bandProfile(upperPath, base + sublayerThickness + sublayerGap, sublayerThickness);
         const G4int longitudinalCount = static_cast<G4int>(std::ceil(tunnelStationDistance.back() / trackerSegmentWidth));
         const G4double longitudinalWidth = tunnelStationDistance.back() / longitudinalCount;
-        std::vector<G4ThreeVector> cellCenters;
-        std::vector<G4double> cellAngles;
-        cellCenters.reserve(longitudinalCount);
-        cellAngles.reserve(longitudinalCount);
         for (G4int strip = 0; strip < longitudinalCount; ++strip) {
-            G4double angle = 0.0;
-            cellCenters.push_back(centerAtDistance((strip + 0.5) * longitudinalWidth, angle));
-            cellAngles.push_back(angle);
-        }
-        std::ostringstream zSolidName; zSolidName << zName.str() << "_parameterised_solid";
-        G4ExtrudedSolid* longitudinalSolid = new G4ExtrudedSolid(
-            zSolidName.str(), longitudinalProfile, 0.5 * longitudinalWidth,
-            G4TwoVector(), 1.0, G4TwoVector(), 1.0);
-        G4LogicalVolume* longitudinalLogic = new G4LogicalVolume(
-            longitudinalSolid, matPlScin, zName.str() + "_logic", 0, 0, 0);
-        G4VisAttributes* longitudinalVis = new G4VisAttributes(zColours[station]);
-        longitudinalVis->SetVisibility(true);
-        longitudinalVis->SetForceSolid(true);
-        longitudinalLogic->SetVisAttributes(longitudinalVis);
-
-        for (G4int strip = 0; strip < longitudinalCount; ++strip) {
-            G4RotationMatrix* rotation = new G4RotationMatrix();
-            rotation->rotateY(cellAngles[strip]);
             std::ostringstream stripName; stripName << zName.str() << "_segment_" << strip;
-            new G4PVPlacement(rotation, cellCenters[strip], longitudinalLogic,
-                              stripName.str(), curvedTunnelLogic, false,
-                              zIDs[station] + strip, false);
+            G4LogicalVolume* logic = new G4LogicalVolume(
+                    sweepProfileInterval(stripName.str(), longitudinalProfile, strip * longitudinalWidth, (strip + 1) * longitudinalWidth),
+                    matPlScin, stripName.str() + "_logic", 0, 0, 0);
+            G4VisAttributes* vis = new G4VisAttributes((strip % 2) ? alternateColour(zColours[station]) : zColours[station]);
+            vis->SetVisibility(true); vis->SetForceSolid(true); logic->SetVisAttributes(vis);
+            new G4PVPlacement(0, G4ThreeVector(), logic, stripName.str(), curvedTunnelLogic, false, zIDs[station] + strip, false);
+            activeLogics.push_back(logic);
         }
-        activeLogics.push_back(longitudinalLogic);
         if (station > 0) {
             const G4int wallBase = 100 + 10 * (station + 1);
             std::ostringstream wr, wl; wr << "gargoyle_scint_phys_wall_extension_" << station << "_right"; wl << "gargoyle_scint_phys_wall_extension_" << station << "_left";
