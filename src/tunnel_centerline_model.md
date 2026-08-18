@@ -124,7 +124,7 @@ The implementation maps the drawing into the Geant4 **X-Z plan view**; Geant4 Y 
 
 The geometry preserves every analytic join while using one chord for each straight, five chords for the long smooth transition, and three chords for each quarter-turn. This gives 15 representative chords in total. Cross-sections use the angle bisector of adjacent chord directions, remain upright, and do not roll. The tunnel is a single closed `G4TessellatedSolid`, not a Boolean union: adjacent rings share their boundary exactly, so it remains hermetic without overlapping solids. The arch uses 24 facets in cross-section.
 
-`grDetectorConstruction.cc.Tunnel` is the corrected tunnel-only implementation. `grDetectorConstruction.cc.TunnelDetector` adds the detector, and is also the active `grDetectorConstruction.cc`. The concrete world is volume ID 2 (rock), and the tunnel daughter is volume ID 1 (tunnel air).
+`grDetectorConstruction.cc.Tunnel` is the corrected tunnel-only implementation. `grDetectorConstruction.cc.TunnelDetector` adds the detector, and is also the active `grDetectorConstruction.cc`. The world is air and remains visually hidden. A finite 1 m-thick swept rock shell is volume ID 2 and uses the same translucent brown-gray appearance as the straight main-branch geometry. The explicit tunnel-air volume is ID 1 and is invisible; detector shells are placed inside it. Only the defined shell is concrete, so particles outside it do not incur rock-transport cost.
 
 ## Detector sweep and performance
 

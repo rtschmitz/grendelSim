@@ -48,7 +48,6 @@
 #include "G4Polycone.hh"
 #include "G4Polyhedra.hh"
 #include "G4UnionSolid.hh"
-#include "G4MultiUnion.hh"
 #include "G4SubtractionSolid.hh"
 #include "G4TessellatedSolid.hh"
 #include "G4TriangularFacet.hh"
@@ -131,10 +130,9 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     //   X-Z = horizontal tunnel-centerline plane
     //   Y   = vertical, positive up
     //
-    // The air volume is one voxelized G4MultiUnion made from short native
-    // G4ExtrudedSolid chords.  This keeps navigation substantially cheaper
-    // than a long chain of Boolean unions/subtractions or a fine tessellated
-    // sweep, while retaining the bends that matter for detector design.
+    // The tunnel, finite rock envelope, and detector layers are closed swept
+    // tessellated solids. This avoids Boolean-solid visualization overhead while
+    // retaining the bends that matter for detector design.
     // -------------------------------------------------------------------------
 
     if (verbose >= 0) {
@@ -174,7 +172,6 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
             / (tunnelRectArea + tunnelEllipseArea);
     const G4double tunnelFloorY = -tunnelCentroidY;
     const G4double tunnelSpringY = tunnelFloorY + tunnelWallHeight;
-    const G4double tunnelTopY = tunnelFloorY + tunnelHeight;
 
     const G4int tunnelArchSegments = 24;
     std::vector<G4TwoVector> curvedTunnelProfile;
@@ -350,9 +347,8 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     }
 
     // ---------------------------------------------------------------------
-    // Build the one-piece air tunnel.  Neighboring chords overlap only enough
-    // to close the small outside wedge at a bend; G4MultiUnion removes those
-    // internal faces before navigation.  Voxelize() is essential for runtime.
+    // Build the one-piece air tunnel from shared cross-section rings. The rings
+    // meet exactly at each representative centerline station.
     // ---------------------------------------------------------------------
     std::vector<G4double> chordAngles(tunnelChordCount, 0.0);
     for (G4int i = 0; i < tunnelChordCount; ++i) {
@@ -367,8 +363,6 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     // Boolean polygonization performed by G4MultiUnion::CreatePolyhedron().
     G4TessellatedSolid* curvedTunnelSolid =
             new G4TessellatedSolid("gargoyle_curved_tunnel_air_solid");
-    const G4double maximumLateralHalfWidth =
-            std::max(tunnelHalfFloor, tunnelHalfArch);
 
     std::vector<G4double> stationAngles(tunnelStations.size(), 0.0);
     stationAngles.front() = chordAngles.front();
@@ -419,8 +413,104 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     }
     curvedTunnelSolid->SetSolidClosed(true);
 
-    // Concrete world with a single air daughter is both physically natural
-    // and faster than subtracting the tunnel from a large rock solid.
+    // Finite one-metre rock envelope around the curved tunnel. Build the
+    // annular sweep directly so visualization does not have to polygonize a
+    // subtraction solid.
+    const G4double concreteThickness = 1.0 * m;
+    auto cross2D = [](const G4TwoVector& a, const G4TwoVector& b) {
+        return a.x() * b.y() - a.y() * b.x();
+    };
+    std::vector<G4TwoVector> outerRockProfile;
+    outerRockProfile.reserve(curvedTunnelProfile.size());
+    for (std::size_t i = 0; i < curvedTunnelProfile.size(); ++i) {
+        const std::size_t previous =
+                (i + curvedTunnelProfile.size() - 1) % curvedTunnelProfile.size();
+        const std::size_t next = (i + 1) % curvedTunnelProfile.size();
+        G4TwoVector previousDirection(
+                curvedTunnelProfile[i].x() - curvedTunnelProfile[previous].x(),
+                curvedTunnelProfile[i].y() - curvedTunnelProfile[previous].y());
+        G4TwoVector nextDirection(
+                curvedTunnelProfile[next].x() - curvedTunnelProfile[i].x(),
+                curvedTunnelProfile[next].y() - curvedTunnelProfile[i].y());
+        previousDirection = G4TwoVector(previousDirection.x() / previousDirection.mag(),
+                                             previousDirection.y() / previousDirection.mag());
+        nextDirection = G4TwoVector(nextDirection.x() / nextDirection.mag(),
+                                    nextDirection.y() / nextDirection.mag());
+        const G4TwoVector previousOutward(previousDirection.y(),
+                                          -previousDirection.x());
+        const G4TwoVector nextOutward(nextDirection.y(), -nextDirection.x());
+        const G4TwoVector previousPoint = curvedTunnelProfile[i]
+                                        + concreteThickness * previousOutward;
+        const G4TwoVector nextPoint = curvedTunnelProfile[i]
+                                    + concreteThickness * nextOutward;
+        const G4double denominator = cross2D(previousDirection, nextDirection);
+        if (std::fabs(denominator) > 1.0e-12) {
+            const G4double distance =
+                    cross2D(nextPoint - previousPoint, nextDirection)
+                    / denominator;
+            outerRockProfile.push_back(previousPoint
+                                     + distance * previousDirection);
+        } else {
+            outerRockProfile.push_back(previousPoint);
+        }
+    }
+
+    std::vector<TunnelRing> outerRockRings;
+    outerRockRings.reserve(tunnelStations.size());
+    for (std::size_t station = 0; station < tunnelStations.size(); ++station) {
+        TunnelRing ring;
+        ring.reserve(outerRockProfile.size());
+        const G4double cosineAngle = std::cos(stationAngles[station]);
+        const G4double sineAngle = std::sin(stationAngles[station]);
+        for (std::size_t vertex = 0; vertex < outerRockProfile.size(); ++vertex) {
+            const G4double lateral = outerRockProfile[vertex].x();
+            ring.push_back(G4ThreeVector(
+                    tunnelStations[station].x() + cosineAngle * lateral,
+                    outerRockProfile[vertex].y(),
+                    tunnelStations[station].y() - sineAngle * lateral));
+        }
+        outerRockRings.push_back(ring);
+    }
+
+    G4TessellatedSolid* curvedRockSolid =
+            new G4TessellatedSolid("gargoyle_curved_rock_solid");
+    for (std::size_t station = 0; station + 1 < tunnelRings.size(); ++station) {
+        for (std::size_t vertex = 0; vertex < profileVertices; ++vertex) {
+            const std::size_t next = (vertex + 1) % profileVertices;
+            // Outer surface.
+            curvedRockSolid->AddFacet(new G4TriangularFacet(
+                    outerRockRings[station][vertex], outerRockRings[station][next],
+                    outerRockRings[station+1][next], ABSOLUTE));
+            curvedRockSolid->AddFacet(new G4TriangularFacet(
+                    outerRockRings[station][vertex], outerRockRings[station+1][next],
+                    outerRockRings[station+1][vertex], ABSOLUTE));
+            // Inner cavern surface, with the opposite winding.
+            curvedRockSolid->AddFacet(new G4TriangularFacet(
+                    tunnelRings[station][vertex], tunnelRings[station+1][next],
+                    tunnelRings[station][next], ABSOLUTE));
+            curvedRockSolid->AddFacet(new G4TriangularFacet(
+                    tunnelRings[station][vertex], tunnelRings[station+1][vertex],
+                    tunnelRings[station+1][next], ABSOLUTE));
+            // Open-ended annular faces.
+            curvedRockSolid->AddFacet(new G4TriangularFacet(
+                    outerRockRings.front()[vertex], tunnelRings.front()[vertex],
+                    tunnelRings.front()[next], ABSOLUTE));
+            curvedRockSolid->AddFacet(new G4TriangularFacet(
+                    outerRockRings.front()[vertex], tunnelRings.front()[next],
+                    outerRockRings.front()[next], ABSOLUTE));
+            curvedRockSolid->AddFacet(new G4TriangularFacet(
+                    outerRockRings.back()[vertex], outerRockRings.back()[next],
+                    tunnelRings.back()[next], ABSOLUTE));
+            curvedRockSolid->AddFacet(new G4TriangularFacet(
+                    outerRockRings.back()[vertex], tunnelRings.back()[next],
+                    tunnelRings.back()[vertex], ABSOLUTE));
+        }
+    }
+    curvedRockSolid->SetSolidClosed(true);
+
+    // Air world containing a finite rock shell and a distinct air tunnel.
+    // Only the one-metre swept envelope is concrete; the rest of the world is
+    // air, avoiding needless particle transport through a huge rock box.
     G4double stationMinX = tunnelStations.front().x();
     G4double stationMaxX = tunnelStations.front().x();
     G4double stationMinZ = tunnelStations.front().y();
@@ -431,37 +521,47 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         stationMinZ = std::min(stationMinZ, tunnelStations[i].y());
         stationMaxZ = std::max(stationMaxZ, tunnelStations[i].y());
     }
-
-    const G4double rockPadding = 5.0 * m;
+    G4double outerMaxAbsX = 0.0;
+    G4double outerMaxAbsY = 0.0;
+    for (std::size_t i = 0; i < outerRockProfile.size(); ++i) {
+        outerMaxAbsX = std::max(outerMaxAbsX, std::fabs(outerRockProfile[i].x()));
+        outerMaxAbsY = std::max(outerMaxAbsY, std::fabs(outerRockProfile[i].y()));
+    }
+    const G4double worldPadding = 1.0 * m;
     const G4double curvedWorldHalfX =
             std::max(std::fabs(stationMinX), std::fabs(stationMaxX))
-            + maximumLateralHalfWidth + rockPadding;
-    const G4double curvedWorldHalfY =
-            std::max(std::fabs(tunnelFloorY), std::fabs(tunnelTopY))
-            + rockPadding;
+            + outerMaxAbsX + worldPadding;
+    const G4double curvedWorldHalfY = outerMaxAbsY + worldPadding;
     const G4double curvedWorldHalfZ =
             std::max(std::fabs(stationMinZ), std::fabs(stationMaxZ))
-            + maximumLateralHalfWidth + rockPadding;
+            + outerMaxAbsX + worldPadding;
 
     G4Box* curvedWorldSolid = new G4Box(
             "world", curvedWorldHalfX, curvedWorldHalfY, curvedWorldHalfZ);
     G4LogicalVolume* curvedWorldLogic = new G4LogicalVolume(
-            curvedWorldSolid, tunnelRock, "World", 0, 0, 0);
+            curvedWorldSolid, tunnelAir, "World", 0, 0, 0);
     G4VisAttributes* curvedWorldVis = new G4VisAttributes();
     curvedWorldVis->SetVisibility(false);
     curvedWorldLogic->SetVisAttributes(curvedWorldVis);
-
     G4VPhysicalVolume* curvedWorldPhysical = new G4PVPlacement(
-            0, G4ThreeVector(), curvedWorldLogic, "rockPhysic", 0, false,
-            grVolumeID::Rock, true);
+            0, G4ThreeVector(), curvedWorldLogic, "World", 0, false,
+            grVolumeID::TunnelAir, true);
+
+    G4LogicalVolume* curvedRockLogic = new G4LogicalVolume(
+            curvedRockSolid, tunnelRock, "gargoyle_curved_rock_logic", 0, 0, 0);
+    G4VisAttributes* curvedRockVis = new G4VisAttributes(
+            G4Colour(0.55, 0.50, 0.45, 0.35));
+    curvedRockVis->SetVisibility(true);
+    curvedRockVis->SetForceSolid(true);
+    curvedRockLogic->SetVisAttributes(curvedRockVis);
+    new G4PVPlacement(0, G4ThreeVector(), curvedRockLogic, "rockPhysic",
+            curvedWorldLogic, false, grVolumeID::Rock, false);
 
     G4LogicalVolume* curvedTunnelLogic = new G4LogicalVolume(
             curvedTunnelSolid, tunnelAir, "gargoyle_curved_tunnel_air_logic",
             0, 0, 0);
-    G4VisAttributes* curvedTunnelVis = new G4VisAttributes(
-            G4Colour(0.20, 0.75, 1.00, 0.25));
-    curvedTunnelVis->SetVisibility(true);
-    curvedTunnelVis->SetForceSolid(true);
+    G4VisAttributes* curvedTunnelVis = new G4VisAttributes();
+    curvedTunnelVis->SetVisibility(false);
     curvedTunnelLogic->SetVisAttributes(curvedTunnelVis);
     new G4PVPlacement(0, G4ThreeVector(), curvedTunnelLogic,
             "gargoyle_curved_tunnel_air_phys", curvedWorldLogic,
@@ -470,7 +570,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     // ---------------------------------------------------------------------
     // Hermetic detector shells swept through the same centerline chords.
     // Eight tracker shells and the veto shells remain continuous through bends;
-    // each is one voxelized solid, avoiding O(pathLength/pitch) placements.
+    // each is one tessellated solid, avoiding O(pathLength/pitch) placements.
     // ---------------------------------------------------------------------
     G4Material* matPlScin = G4Material::GetMaterial("plScintillator", false);
     if (!matPlScin) {
