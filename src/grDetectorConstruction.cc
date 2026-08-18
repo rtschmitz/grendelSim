@@ -436,6 +436,35 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                 std::cos(chordAngles[i-1]) + std::cos(chordAngles[i]));
     }
 
+    // A single selected chord is treated as a straight local detector.
+    // Its local z axis is rotated onto the measured centerline chord.
+    G4bool fastStraight = tunnelStations.size() >= 2;
+    for (std::size_t chord = 1; chord < chordAngles.size() && fastStraight; ++chord) {
+        const G4double dAngle = std::atan2(std::sin(chordAngles[chord] - chordAngles[0]),
+                                           std::cos(chordAngles[chord] - chordAngles[0]));
+        if (std::fabs(dAngle) > 1.0e-6) fastStraight = false;
+    }
+    G4ThreeVector fastMidpoint;
+    G4RotationMatrix* fastRotation = 0;
+    if (fastStraight) {
+        fastMidpoint = G4ThreeVector(
+                0.5 * (tunnelStations[0].x() + tunnelStations[1].x()),
+                0.0,
+                0.5 * (tunnelStations[0].y() + tunnelStations[1].y()));
+        fastRotation = new G4RotationMatrix();
+        fastRotation->rotateY(chordAngles.front());
+    }
+    auto makeFastExtrudedSolid = [](const G4String& name,
+                                    const std::vector<G4TwoVector>& profile,
+                                    G4double halfLength) -> G4VSolid* {
+        std::vector<G4TwoVector> polygon;
+        polygon.reserve(profile.size());
+        for (std::size_t i = 0; i < profile.size(); ++i) polygon.push_back(profile[i]);
+        return new G4ExtrudedSolid(name, polygon, halfLength,
+                                   G4TwoVector(0.0, 0.0), 1.0,
+                                   G4TwoVector(0.0, 0.0), 1.0);
+    };
+
     typedef std::vector<G4ThreeVector> TunnelRing;
     std::vector<TunnelRing> tunnelRings;
     tunnelRings.reserve(tunnelStations.size());
@@ -620,13 +649,32 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     new G4PVPlacement(0, G4ThreeVector(), curvedRockLogic, "rockPhysic",
             curvedWorldLogic, false, grVolumeID::Rock, false);
 
+    G4VSolid* tunnelAirNavigationSolid = curvedTunnelSolid;
+    if (fastStraight) {
+        // The detector veto strips deliberately straddle the nominal tunnel
+        // boundary (the floor is below it and the wall strips are outside
+        // it). Give the inexpensive straight navigation mother a small
+        // allowance so those physical daughter volumes remain contained.
+        std::vector<G4TwoVector> fastTunnelProfile = curvedTunnelProfile;
+        const G4double navigationAllowance = 10.0 * cm;
+        for (std::size_t i = 0; i < fastTunnelProfile.size(); ++i) {
+            const G4double x = fastTunnelProfile[i].x();
+            fastTunnelProfile[i].setX(x + (x >= 0.0 ? navigationAllowance : -navigationAllowance));
+            fastTunnelProfile[i].setY(fastTunnelProfile[i].y() +
+                    (fastTunnelProfile[i].y() <= tunnelFloorY ? -navigationAllowance : navigationAllowance));
+        }
+        tunnelAirNavigationSolid = makeFastExtrudedSolid(
+                "gargoyle_straight_tunnel_air_solid", fastTunnelProfile,
+                0.5 * constructedTunnelLength);
+    }
     G4LogicalVolume* curvedTunnelLogic = new G4LogicalVolume(
-            curvedTunnelSolid, tunnelAir, "gargoyle_curved_tunnel_air_logic",
+            tunnelAirNavigationSolid, tunnelAir, "gargoyle_curved_tunnel_air_logic",
             0, 0, 0);
     G4VisAttributes* curvedTunnelVis = new G4VisAttributes();
     curvedTunnelVis->SetVisibility(false);
     curvedTunnelLogic->SetVisAttributes(curvedTunnelVis);
-    new G4PVPlacement(0, G4ThreeVector(), curvedTunnelLogic,
+    new G4PVPlacement(fastStraight ? fastRotation : 0,
+            fastStraight ? fastMidpoint : G4ThreeVector(), curvedTunnelLogic,
             "gargoyle_curved_tunnel_air_phys", curvedWorldLogic,
             false, grVolumeID::TunnelAir, false);
 
@@ -749,7 +797,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         tunnelStationDistance[station] = tunnelStationDistance[station - 1]
                                        + std::sqrt(dx * dx + dz * dz);
     }
-    auto interpolatedRing = [&](const CrossPath& profile, G4double distance) {
+    auto interpolatedRing = [&](const std::vector<G4TwoVector>& profile, G4double distance) {
         std::size_t chord = 0;
         while (chord + 2 < tunnelStationDistance.size()
                && distance > tunnelStationDistance[chord + 1]) ++chord;
@@ -798,9 +846,13 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         return solid;
     };
     std::vector<G4LogicalVolume*> activeLogics;
-    auto placeActive = [&](const G4String& name, const CrossPath& profile,
+    auto placeActive = [&](const G4String& name, const std::vector<G4TwoVector>& profile,
                            G4int copyNo, const G4Colour& colour) {
-        G4LogicalVolume* logic = new G4LogicalVolume(sweepProfile(name, profile),
+        G4VSolid* solid = fastStraight
+                ? makeFastExtrudedSolid(name + "_extruded_solid", profile,
+                                        0.5 * constructedTunnelLength)
+                : static_cast<G4VSolid*>(sweepProfile(name, profile));
+        G4LogicalVolume* logic = new G4LogicalVolume(solid,
             matPlScin, name + "_logic", 0, 0, 0);
         G4VisAttributes* vis = new G4VisAttributes(colour);
         vis->SetVisibility(true); vis->SetForceSolid(true);
@@ -814,6 +866,60 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         return G4Colour(colour.GetRed() * (1.0 - blend) + blend,
                         colour.GetGreen() * (1.0 - blend) + blend,
                         colour.GetBlue() * (1.0 - blend) + blend, colour.GetAlpha());
+    };
+
+    const G4double trackerSegmentWidth = 10.0 * cm;
+
+    auto placeFastLongitudinal = [&](const G4String& baseName,
+                                     const G4String& physicalBaseName,
+                                     const CrossPath& profile,
+                                     G4double wallOffset,
+                                     G4double thickness,
+                                     const G4Colour& colour) {
+        const G4int segmentCount = std::max(2, static_cast<G4int>(
+                std::ceil(constructedTunnelLength / trackerSegmentWidth)));
+        const G4int evenSegmentCount = (segmentCount % 2) ? segmentCount + 1 : segmentCount;
+        const G4double actualWidth = constructedTunnelLength / evenSegmentCount;
+        CrossPath shellProfile = bandProfile(profile, wallOffset, thickness);
+        G4VSolid* envelopeSolid = makeFastExtrudedSolid(
+                baseName + "_envelope_solid", shellProfile,
+                0.5 * constructedTunnelLength);
+        G4LogicalVolume* envelopeLogic = new G4LogicalVolume(
+                envelopeSolid, tunnelAir, baseName + "_envelope_logic", 0, 0, 0);
+        G4VisAttributes* envelopeVis = new G4VisAttributes();
+        envelopeVis->SetVisibility(false);
+        envelopeLogic->SetVisAttributes(envelopeVis);
+        new G4PVPlacement(0, G4ThreeVector(), envelopeLogic,
+                baseName + "_envelope_phys", curvedTunnelLogic, false, 0, false);
+        const G4int cellCount = evenSegmentCount / 2;
+        const G4double cellWidth = 2.0 * actualWidth;
+        G4VSolid* cellSolid = makeFastExtrudedSolid(
+                baseName + "_cell_solid", shellProfile, 0.5 * cellWidth);
+        G4LogicalVolume* cellLogic = new G4LogicalVolume(
+                cellSolid, tunnelAir, baseName + "_cell_logic", 0, 0, 0);
+        G4VisAttributes* cellVis = new G4VisAttributes();
+        cellVis->SetVisibility(false);
+        cellLogic->SetVisAttributes(cellVis);
+        new G4PVReplica(physicalBaseName + "_phys_cell", cellLogic,
+                envelopeLogic, kZAxis, cellCount, cellWidth);
+        G4VSolid* stripSolid = makeFastExtrudedSolid(
+                baseName + "_solid", shellProfile, 0.5 * actualWidth);
+        for (G4int parity = 0; parity < 2; ++parity) {
+            std::ostringstream logicName, physicalName;
+            logicName << baseName << "_logic_" << parity;
+            physicalName << physicalBaseName << "_phys_" << parity;
+            G4LogicalVolume* stripLogic = new G4LogicalVolume(
+                    stripSolid, matPlScin, logicName.str(), 0, 0, 0);
+            G4VisAttributes* vis = new G4VisAttributes(
+                    parity ? alternateColour(colour) : colour);
+            vis->SetVisibility(true);
+            vis->SetForceSolid(true);
+            stripLogic->SetVisAttributes(vis);
+            const G4double z = (parity ? 0.5 : -0.5) * actualWidth;
+            new G4PVPlacement(0, G4ThreeVector(0, 0, z), stripLogic,
+                    physicalName.str(), cellLogic, false, parity, false);
+            activeLogics.push_back(stripLogic);
+        }
     };
 
     const G4double wallGap = 0.1 * cm, floorThickness = 2.0 * cm;
@@ -831,7 +937,6 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     }
     upperPath.push_back(G4TwoVector(-tunnelHalfArch, tunnelSpringY)); upperPath.push_back(G4TwoVector(-tunnelHalfArch, midWallY));
 
-    const G4double trackerSegmentWidth = 10.0 * cm;
     CrossPath segmentedUpperPath; segmentedUpperPath.push_back(upperPath.front());
     for (std::size_t edge = 0; edge + 1 < upperPath.size(); ++edge) {
         const G4TwoVector delta(upperPath[edge + 1].x() - upperPath[edge].x(), upperPath[edge + 1].y() - upperPath[edge].y());
@@ -862,18 +967,35 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                         phiIDs[station] + static_cast<G4int>(strip),
                         (strip % 2) ? alternateColour(phiColours[station]) : phiColours[station]);
         }
-        const CrossPath longitudinalProfile = bandProfile(upperPath, base + sublayerThickness + sublayerGap, sublayerThickness);
-        const G4int longitudinalCount = static_cast<G4int>(std::ceil(tunnelStationDistance.back() / trackerSegmentWidth));
-        const G4double longitudinalWidth = tunnelStationDistance.back() / longitudinalCount;
-        for (G4int strip = 0; strip < longitudinalCount; ++strip) {
-            std::ostringstream stripName; stripName << zName.str() << "_segment_" << strip;
-            G4LogicalVolume* logic = new G4LogicalVolume(
-                    sweepProfileInterval(stripName.str(), longitudinalProfile, strip * longitudinalWidth, (strip + 1) * longitudinalWidth),
-                    matPlScin, stripName.str() + "_logic", 0, 0, 0);
-            G4VisAttributes* vis = new G4VisAttributes((strip % 2) ? alternateColour(zColours[station]) : zColours[station]);
-            vis->SetVisibility(true); vis->SetForceSolid(true); logic->SetVisAttributes(vis);
-            new G4PVPlacement(0, G4ThreeVector(), logic, stripName.str(), curvedTunnelLogic, false, zIDs[station] + strip, false);
-            activeLogics.push_back(logic);
+        if (fastStraight) {
+            placeFastLongitudinal(zName.str(), zName.str(), upperPath,
+                    base + sublayerThickness + sublayerGap, sublayerThickness,
+                    zColours[station]);
+        } else {
+            const CrossPath longitudinalProfile = bandProfile(upperPath,
+                    base + sublayerThickness + sublayerGap, sublayerThickness);
+            const G4int longitudinalCount = static_cast<G4int>(
+                    std::ceil(tunnelStationDistance.back() / trackerSegmentWidth));
+            const G4double longitudinalWidth =
+                    tunnelStationDistance.back() / longitudinalCount;
+            for (G4int strip = 0; strip < longitudinalCount; ++strip) {
+                std::ostringstream stripName;
+                stripName << zName.str() << "_segment_" << strip;
+                G4LogicalVolume* logic = new G4LogicalVolume(
+                        sweepProfileInterval(stripName.str(), longitudinalProfile,
+                                strip * longitudinalWidth,
+                                (strip + 1) * longitudinalWidth),
+                        matPlScin, stripName.str() + "_logic", 0, 0, 0);
+                G4VisAttributes* vis = new G4VisAttributes(
+                        (strip % 2) ? alternateColour(zColours[station])
+                                    : zColours[station]);
+                vis->SetVisibility(true);
+                vis->SetForceSolid(true);
+                logic->SetVisAttributes(vis);
+                new G4PVPlacement(0, G4ThreeVector(), logic, stripName.str(),
+                        curvedTunnelLogic, false, zIDs[station] + strip, false);
+                activeLogics.push_back(logic);
+            }
         }
         if (station > 0) {
             const G4int wallBase = 100 + 10 * (station + 1);
