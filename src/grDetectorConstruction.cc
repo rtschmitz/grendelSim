@@ -768,7 +768,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     }
     upperPath.push_back(G4TwoVector(-tunnelHalfArch, tunnelSpringY)); upperPath.push_back(G4TwoVector(-tunnelHalfArch, midWallY));
 
-    const G4double trackerSegmentWidth = 50.0 * cm;
+    const G4double trackerSegmentWidth = 10.0 * cm;
     CrossPath segmentedUpperPath; segmentedUpperPath.push_back(upperPath.front());
     for (std::size_t edge = 0; edge + 1 < upperPath.size(); ++edge) {
         const G4TwoVector delta(upperPath[edge + 1].x() - upperPath[edge].x(), upperPath[edge + 1].y() - upperPath[edge].y());
@@ -825,7 +825,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     for (std::size_t i = 0; i < activeLogics.size(); ++i) activeLogics[i]->SetSensitiveDetector(scintSD);
     this->SetNLayer(12); this->SetNBarPerLayer(1);
     G4cout << "  curved detector active physical volumes: " << activeLogics.size() << G4endl;
-    G4cout << "  tracker segmentation: 50 cm transverse and longitudinal" << G4endl;
+    G4cout << "  tracker segmentation: 10 cm transverse and longitudinal" << G4endl;
 
     if (verbose >= 0) {
         G4cout << "Curved GARGOYLE tunnel summary:" << G4endl;
