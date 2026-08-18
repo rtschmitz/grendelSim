@@ -564,6 +564,18 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         outerRockRings.push_back(ring);
     }
 
+    std::vector<G4TwoVector> fastTunnelProfile;
+    if (fastStraight) {
+        fastTunnelProfile = curvedTunnelProfile;
+        const G4double navigationAllowance = 4.0 * cm;
+        for (std::size_t i = 0; i < fastTunnelProfile.size(); ++i) {
+            const G4double x = fastTunnelProfile[i].x();
+            fastTunnelProfile[i].setX(x + (x >= 0.0 ? navigationAllowance : -navigationAllowance));
+            fastTunnelProfile[i].setY(fastTunnelProfile[i].y() +
+                    (fastTunnelProfile[i].y() <= tunnelFloorY ? -navigationAllowance : navigationAllowance));
+        }
+    }
+
     G4TessellatedSolid* curvedRockSolid =
             new G4TessellatedSolid("gargoyle_curved_rock_solid");
     for (std::size_t station = 0; station + 1 < tunnelRings.size(); ++station) {
@@ -639,30 +651,37 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
             0, G4ThreeVector(), curvedWorldLogic, "World", 0, false,
             grVolumeID::TunnelAir, true);
 
+    G4VSolid* rockNavigationSolid = curvedRockSolid;
+    if (fastStraight) {
+        // A straight selection uses the same inexpensive boolean shell as the
+        // fast short-geometry implementation.  The curved mode retains the
+        // swept tessellated shell above.  Use the same small expanded tunnel
+        // profile as the air mother so the two material regions meet cleanly.
+        G4VSolid* fastOuterRock = makeFastExtrudedSolid(
+                "gargoyle_straight_rock_outer_solid", outerRockProfile,
+                0.5 * constructedTunnelLength);
+        G4VSolid* fastTunnelCutout = makeFastExtrudedSolid(
+                "gargoyle_straight_rock_cutout_solid", fastTunnelProfile,
+                0.5 * constructedTunnelLength + 1.0 * cm);
+        rockNavigationSolid = new G4SubtractionSolid(
+                "gargoyle_straight_rock_shell_solid", fastOuterRock,
+                fastTunnelCutout);
+    }
     G4LogicalVolume* curvedRockLogic = new G4LogicalVolume(
-            curvedRockSolid, tunnelRock, "gargoyle_curved_rock_logic", 0, 0, 0);
+            rockNavigationSolid, tunnelRock, "gargoyle_curved_rock_logic", 0, 0, 0);
     G4VisAttributes* curvedRockVis = new G4VisAttributes(
             G4Colour(0.55, 0.50, 0.45, 0.35));
     curvedRockVis->SetVisibility(true);
     curvedRockVis->SetForceSolid(true);
     curvedRockLogic->SetVisAttributes(curvedRockVis);
-    new G4PVPlacement(0, G4ThreeVector(), curvedRockLogic, "rockPhysic",
-            curvedWorldLogic, false, grVolumeID::Rock, false);
+    new G4PVPlacement(fastStraight ? fastRotation : 0,
+            fastStraight ? fastMidpoint : G4ThreeVector(), curvedRockLogic,
+            "rockPhysic", curvedWorldLogic, false, grVolumeID::Rock, false);
 
     G4VSolid* tunnelAirNavigationSolid = curvedTunnelSolid;
     if (fastStraight) {
         // The detector veto strips deliberately straddle the nominal tunnel
-        // boundary (the floor is below it and the wall strips are outside
-        // it). Give the inexpensive straight navigation mother a small
-        // allowance so those physical daughter volumes remain contained.
-        std::vector<G4TwoVector> fastTunnelProfile = curvedTunnelProfile;
-        const G4double navigationAllowance = 4.0 * cm;
-        for (std::size_t i = 0; i < fastTunnelProfile.size(); ++i) {
-            const G4double x = fastTunnelProfile[i].x();
-            fastTunnelProfile[i].setX(x + (x >= 0.0 ? navigationAllowance : -navigationAllowance));
-            fastTunnelProfile[i].setY(fastTunnelProfile[i].y() +
-                    (fastTunnelProfile[i].y() <= tunnelFloorY ? -navigationAllowance : navigationAllowance));
-        }
+        // boundary, so use the same small allowance as the fast rock shell.
         tunnelAirNavigationSolid = makeFastExtrudedSolid(
                 "gargoyle_straight_tunnel_air_solid", fastTunnelProfile,
                 0.5 * constructedTunnelLength);
