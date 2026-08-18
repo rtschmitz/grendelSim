@@ -6,15 +6,15 @@
 /gps/pos/shape Rectangle
 # The curved model's longest straight chord is the 23.14 m lower section,
 # parallel to global Z. Its centerline midpoint is approximately
-# (x,z) = (0.033,-26.595) m. Place the unchanged source plane just outside
-# the +X face of the one-metre rock envelope, centered on that chord.
-/gps/pos/centre 293.3 0 -2659.5 cm
+# (x,z) = (0.033,-26.595) m. Place the source plane above the rock envelope,
+# horizontal in X-Z, with the GPS normal oriented so muons travel downward.
+/gps/pos/centre 0 300 -2659.5 cm
 /gps/pos/halfx 340 cm
 /gps/pos/halfy 575 cm #500cm
 #/gps/pos/halfx 10 cm
 #/gps/pos/halfy 20 cm #500cm
-/gps/pos/rot1 0 1 0
-/gps/pos/rot2 0 0 1
+/gps/pos/rot1 1 0 0
+/gps/pos/rot2 0 0 -1
 
 /gps/ang/type user
 /gps/hist/type theta
