@@ -37,16 +37,6 @@ int main(int argc, char** argv) {
   if (argc != 1 && argc != 3) { printUsage(argv[0]); return 2; }
   const bool interactive = argc == 1;
   const std::string workflow = interactive ? "cosmic" : argv[1];
-  if (!interactive && workflow == "cosmic" && std::getenv("GRENDEL_TUNNEL_MODE") == nullptr) {
-    const std::string macroPath = argv[2];
-    const char* groups[] = {"straight", "shallow", "turn1", "turn2"};
-    for (const char* group : groups) {
-      if (macroPath.find(std::string("cosmic_") + group) != std::string::npos) {
-        setenv("GRENDEL_TUNNEL_MODE", group, 1);
-        break;
-      }
-    }
-  }
   if (workflow != "cosmic" && workflow != "beam") { printUsage(argv[0]); return 2; }
 
   boost::property_tree::ptree configuration;

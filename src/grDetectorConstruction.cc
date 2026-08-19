@@ -49,6 +49,8 @@
 #include "G4Polyhedra.hh"
 #include "G4UnionSolid.hh"
 #include "G4SubtractionSolid.hh"
+#include "G4IntersectionSolid.hh"
+#include "G4DisplacedSolid.hh"
 #include "G4TessellatedSolid.hh"
 #include "G4TriangularFacet.hh"
 #include "G4QuadrangularFacet.hh"
@@ -410,8 +412,23 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     }
 
     // ---------------------------------------------------------------------
-    // Build the one-piece air tunnel from shared cross-section rings. The rings
-    // meet exactly at each representative centerline station.
+    // Per-chord analytic construction.
+    //
+    // Earlier revisions built every selected chord as one continuous swept
+    // tessellated mesh, with a single-chord special case ("fastStraight")
+    // that fell back to cheap G4ExtrudedSolid pieces. Navigating a
+    // multi-facet tessellated solid is far more expensive per step than
+    // navigating a handful of analytic solids, so any selection spanning
+    // more than one chord (e.g. "straight" = chords 0-1) never hit the
+    // fast path and ran many times slower than a single chord despite
+    // covering a similar length.
+    //
+    // Every selected chord -- however many -- is now built as its own
+    // straight extruded segment, mitre-cut at both ends against the
+    // bisector plane shared with its neighbour so consecutive segments
+    // meet exactly, with no gap or overlap in the rock or tunnel-air
+    // navigation volumes. This keeps the same polygonal centerline
+    // approximation as before while using only cheap analytic solids.
     // ---------------------------------------------------------------------
     std::vector<G4double> chordAngles(tunnelChordCount, 0.0);
     for (G4int i = 0; i < tunnelChordCount; ++i) {
@@ -421,12 +438,6 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                           - tunnelStations[i].y();
         chordAngles[i] = std::atan2(dx, dz);
     }
-
-    // A single closed swept polyhedron avoids the expensive visualization-time
-    // Boolean polygonization performed by G4MultiUnion::CreatePolyhedron().
-    G4TessellatedSolid* curvedTunnelSolid =
-            new G4TessellatedSolid("gargoyle_curved_tunnel_air_solid");
-
     std::vector<G4double> stationAngles(tunnelStations.size(), 0.0);
     stationAngles.front() = chordAngles.front();
     stationAngles.back() = chordAngles.back();
@@ -436,79 +447,33 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                 std::cos(chordAngles[i-1]) + std::cos(chordAngles[i]));
     }
 
-    // A single selected chord is treated as a straight local detector.
-    // Its local z axis is rotated onto the measured centerline chord.
-    G4bool fastStraight = tunnelStations.size() >= 2;
-    for (std::size_t chord = 1; chord < chordAngles.size() && fastStraight; ++chord) {
-        const G4double dAngle = std::atan2(std::sin(chordAngles[chord] - chordAngles[0]),
-                                           std::cos(chordAngles[chord] - chordAngles[0]));
-        if (std::fabs(dAngle) > 1.0e-6) fastStraight = false;
+    // Detector veto strips deliberately straddle the nominal tunnel
+    // boundary, so the tunnel-air navigation solid and the rock cutout
+    // both use this slightly expanded profile. That guarantees the two
+    // independently-built solids share exactly the same inner surface
+    // with no razor-thin navigation gap between them.
+    std::vector<G4TwoVector> fastTunnelProfile = curvedTunnelProfile;
+    {
+        const G4double navigationAllowance = 4.0 * cm;
+        for (std::size_t i = 0; i < fastTunnelProfile.size(); ++i) {
+            const G4double x = fastTunnelProfile[i].x();
+            fastTunnelProfile[i].setX(x + (x >= 0.0 ? navigationAllowance : -navigationAllowance));
+            fastTunnelProfile[i].setY(fastTunnelProfile[i].y() +
+                    (fastTunnelProfile[i].y() <= tunnelFloorY ? -navigationAllowance : navigationAllowance));
+        }
     }
-    G4ThreeVector fastMidpoint;
-    G4RotationMatrix* fastRotation = 0;
-    if (fastStraight) {
-        fastMidpoint = G4ThreeVector(
-                0.5 * (tunnelStations[0].x() + tunnelStations[1].x()),
-                0.0,
-                0.5 * (tunnelStations[0].y() + tunnelStations[1].y()));
-        fastRotation = new G4RotationMatrix();
-        fastRotation->rotateY(chordAngles.front());
-    }
+
     auto makeFastExtrudedSolid = [](const G4String& name,
                                     const std::vector<G4TwoVector>& profile,
                                     G4double halfLength) -> G4VSolid* {
-        std::vector<G4TwoVector> polygon;
-        polygon.reserve(profile.size());
-        for (std::size_t i = 0; i < profile.size(); ++i) polygon.push_back(profile[i]);
-        return new G4ExtrudedSolid(name, polygon, halfLength,
+        return new G4ExtrudedSolid(name, profile, halfLength,
                                    G4TwoVector(0.0, 0.0), 1.0,
                                    G4TwoVector(0.0, 0.0), 1.0);
     };
 
-    typedef std::vector<G4ThreeVector> TunnelRing;
-    std::vector<TunnelRing> tunnelRings;
-    tunnelRings.reserve(tunnelStations.size());
-    for (std::size_t station = 0; station < tunnelStations.size(); ++station) {
-        TunnelRing ring;
-        ring.reserve(curvedTunnelProfile.size());
-        const G4double c = std::cos(stationAngles[station]);
-        const G4double sineAngle = std::sin(stationAngles[station]);
-        for (std::size_t vertex = 0; vertex < curvedTunnelProfile.size(); ++vertex) {
-            const G4double lateral = curvedTunnelProfile[vertex].x();
-            ring.push_back(G4ThreeVector(
-                    tunnelStations[station].x() + c * lateral,
-                    curvedTunnelProfile[vertex].y(),
-                    tunnelStations[station].y() - sineAngle * lateral));
-        }
-        tunnelRings.push_back(ring);
-    }
-
-    const std::size_t profileVertices = curvedTunnelProfile.size();
-    for (std::size_t station = 0; station + 1 < tunnelRings.size(); ++station) {
-        for (std::size_t vertex = 0; vertex < profileVertices; ++vertex) {
-            const std::size_t next = (vertex + 1) % profileVertices;
-            curvedTunnelSolid->AddFacet(new G4TriangularFacet(
-                    tunnelRings[station][vertex], tunnelRings[station][next],
-                    tunnelRings[station+1][next], ABSOLUTE));
-            curvedTunnelSolid->AddFacet(new G4TriangularFacet(
-                    tunnelRings[station][vertex], tunnelRings[station+1][next],
-                    tunnelRings[station+1][vertex], ABSOLUTE));
-        }
-    }
-    for (std::size_t vertex = 1; vertex + 1 < profileVertices; ++vertex) {
-        curvedTunnelSolid->AddFacet(new G4TriangularFacet(
-                tunnelRings.front()[0], tunnelRings.front()[vertex+1],
-                tunnelRings.front()[vertex], ABSOLUTE));
-        curvedTunnelSolid->AddFacet(new G4TriangularFacet(
-                tunnelRings.back()[0], tunnelRings.back()[vertex],
-                tunnelRings.back()[vertex+1], ABSOLUTE));
-    }
-    curvedTunnelSolid->SetSolidClosed(true);
-
-    // Finite one-metre rock envelope around the curved tunnel. Build the
-    // annular sweep directly so visualization does not have to polygonize a
-    // subtraction solid.
-    const G4double concreteThickness = fastStraight ? 0.5 * m : 1.0 * m;
+    // One-metre finite rock envelope around the tunnel, offset outward
+    // from the same cross-section used for the air.
+    const G4double concreteThickness = 1.0 * m;
     auto cross2D = [](const G4TwoVector& a, const G4TwoVector& b) {
         return a.x() * b.y() - a.y() * b.x();
     };
@@ -547,74 +512,10 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         }
     }
 
-    std::vector<TunnelRing> outerRockRings;
-    outerRockRings.reserve(tunnelStations.size());
-    for (std::size_t station = 0; station < tunnelStations.size(); ++station) {
-        TunnelRing ring;
-        ring.reserve(outerRockProfile.size());
-        const G4double cosineAngle = std::cos(stationAngles[station]);
-        const G4double sineAngle = std::sin(stationAngles[station]);
-        for (std::size_t vertex = 0; vertex < outerRockProfile.size(); ++vertex) {
-            const G4double lateral = outerRockProfile[vertex].x();
-            ring.push_back(G4ThreeVector(
-                    tunnelStations[station].x() + cosineAngle * lateral,
-                    outerRockProfile[vertex].y(),
-                    tunnelStations[station].y() - sineAngle * lateral));
-        }
-        outerRockRings.push_back(ring);
-    }
-
-    std::vector<G4TwoVector> fastTunnelProfile;
-    if (fastStraight) {
-        fastTunnelProfile = curvedTunnelProfile;
-        const G4double navigationAllowance = 4.0 * cm;
-        for (std::size_t i = 0; i < fastTunnelProfile.size(); ++i) {
-            const G4double x = fastTunnelProfile[i].x();
-            fastTunnelProfile[i].setX(x + (x >= 0.0 ? navigationAllowance : -navigationAllowance));
-            fastTunnelProfile[i].setY(fastTunnelProfile[i].y() +
-                    (fastTunnelProfile[i].y() <= tunnelFloorY ? -navigationAllowance : navigationAllowance));
-        }
-    }
-
-    G4TessellatedSolid* curvedRockSolid =
-            new G4TessellatedSolid("gargoyle_curved_rock_solid");
-    for (std::size_t station = 0; station + 1 < tunnelRings.size(); ++station) {
-        for (std::size_t vertex = 0; vertex < profileVertices; ++vertex) {
-            const std::size_t next = (vertex + 1) % profileVertices;
-            // Outer surface.
-            curvedRockSolid->AddFacet(new G4TriangularFacet(
-                    outerRockRings[station][vertex], outerRockRings[station][next],
-                    outerRockRings[station+1][next], ABSOLUTE));
-            curvedRockSolid->AddFacet(new G4TriangularFacet(
-                    outerRockRings[station][vertex], outerRockRings[station+1][next],
-                    outerRockRings[station+1][vertex], ABSOLUTE));
-            // Inner cavern surface, with the opposite winding.
-            curvedRockSolid->AddFacet(new G4TriangularFacet(
-                    tunnelRings[station][vertex], tunnelRings[station+1][next],
-                    tunnelRings[station][next], ABSOLUTE));
-            curvedRockSolid->AddFacet(new G4TriangularFacet(
-                    tunnelRings[station][vertex], tunnelRings[station+1][vertex],
-                    tunnelRings[station+1][next], ABSOLUTE));
-            // Open-ended annular faces.
-            curvedRockSolid->AddFacet(new G4TriangularFacet(
-                    outerRockRings.front()[vertex], tunnelRings.front()[vertex],
-                    tunnelRings.front()[next], ABSOLUTE));
-            curvedRockSolid->AddFacet(new G4TriangularFacet(
-                    outerRockRings.front()[vertex], tunnelRings.front()[next],
-                    outerRockRings.front()[next], ABSOLUTE));
-            curvedRockSolid->AddFacet(new G4TriangularFacet(
-                    outerRockRings.back()[vertex], outerRockRings.back()[next],
-                    tunnelRings.back()[next], ABSOLUTE));
-            curvedRockSolid->AddFacet(new G4TriangularFacet(
-                    outerRockRings.back()[vertex], tunnelRings.back()[next],
-                    tunnelRings.back()[vertex], ABSOLUTE));
-        }
-    }
-    curvedRockSolid->SetSolidClosed(true);
-
     // Air world containing a finite rock shell and a distinct air tunnel.
-    // Only the one-metre swept envelope is concrete; the rest of the world is
-    // air, avoiding needless particle transport through a huge rock box.
+    // Only the envelope around the selected chords is concrete; the rest
+    // of the world is air, avoiding needless particle transport through a
+    // huge rock box.
     G4double stationMinX = tunnelStations.front().x();
     G4double stationMaxX = tunnelStations.front().x();
     G4double stationMinZ = tunnelStations.front().y();
@@ -651,57 +552,203 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
             0, G4ThreeVector(), curvedWorldLogic, "World", 0, false,
             grVolumeID::TunnelAir, true);
 
-    G4VSolid* rockNavigationSolid = curvedRockSolid;
-    if (fastStraight) {
-        // A straight selection uses the same inexpensive boolean shell as the
-        // fast short-geometry implementation.  The curved mode retains the
-        // swept tessellated shell above.  Use the same small expanded tunnel
-        // profile as the air mother so the two material regions meet cleanly.
-        G4VSolid* fastOuterRock = makeFastExtrudedSolid(
-                "gargoyle_straight_rock_outer_solid", outerRockProfile,
-                0.5 * constructedTunnelLength);
-        G4VSolid* fastTunnelCutout = makeFastExtrudedSolid(
-                "gargoyle_straight_rock_cutout_solid", fastTunnelProfile,
-                0.5 * constructedTunnelLength + 1.0 * cm);
-        rockNavigationSolid = new G4SubtractionSolid(
-                "gargoyle_straight_rock_shell_solid", fastOuterRock,
-                fastTunnelCutout);
+    // ---------------------------------------------------------------------
+    // Per-chord placement geometry, plus a pair of half-space "mitre"
+    // cutters at every station. The forward cutter keeps everything on
+    // the far side of the station along the local bisector normal (used
+    // to trim a chord's near end); the backward cutter keeps everything
+    // on the near side (used to trim the previous chord's far end). At
+    // the two open ends of the selection the bisector angle equals the
+    // chord's own angle, so the cut lands exactly on the flat end cap.
+    // ---------------------------------------------------------------------
+    std::vector<G4double> chordLengths(tunnelChordCount, 0.0);
+    std::vector<G4ThreeVector> chordMidpoints(tunnelChordCount);
+    std::vector<G4RotationMatrix*> chordRotations(tunnelChordCount);
+    for (G4int i = 0; i < tunnelChordCount; ++i) {
+        const G4double dx = tunnelStations[i + 1].x() - tunnelStations[i].x();
+        const G4double dz = tunnelStations[i + 1].y() - tunnelStations[i].y();
+        chordLengths[i] = std::sqrt(dx * dx + dz * dz);
+        chordMidpoints[i] = G4ThreeVector(
+                0.5 * (tunnelStations[i].x() + tunnelStations[i + 1].x()), 0.0,
+                0.5 * (tunnelStations[i].y() + tunnelStations[i + 1].y()));
+        chordRotations[i] = new G4RotationMatrix();
+        chordRotations[i]->rotateY(-chordAngles[i]);
     }
-    G4LogicalVolume* curvedRockLogic = new G4LogicalVolume(
-            rockNavigationSolid, tunnelRock, "gargoyle_curved_rock_logic", 0, 0, 0);
-    G4VisAttributes* curvedRockVis = new G4VisAttributes(
-            G4Colour(0.55, 0.50, 0.45, 0.35));
-    curvedRockVis->SetVisibility(true);
-    curvedRockVis->SetForceSolid(true);
-    curvedRockLogic->SetVisAttributes(curvedRockVis);
-    new G4PVPlacement(fastStraight ? fastRotation : 0,
-            fastStraight ? fastMidpoint : G4ThreeVector(), curvedRockLogic,
-            "rockPhysic", curvedWorldLogic, false, grVolumeID::Rock, false);
-
-    G4VSolid* tunnelAirNavigationSolid = curvedTunnelSolid;
-    if (fastStraight) {
-        // The detector veto strips deliberately straddle the nominal tunnel
-        // boundary, so use the same small allowance as the fast rock shell.
-        tunnelAirNavigationSolid = makeFastExtrudedSolid(
-                "gargoyle_straight_tunnel_air_solid", fastTunnelProfile,
-                0.5 * constructedTunnelLength);
-    }
-    G4LogicalVolume* curvedTunnelLogic = new G4LogicalVolume(
-            tunnelAirNavigationSolid, tunnelAir, "gargoyle_curved_tunnel_air_logic",
-            0, 0, 0);
-    G4VisAttributes* curvedTunnelVis = new G4VisAttributes();
-    curvedTunnelVis->SetVisibility(false);
-    curvedTunnelLogic->SetVisAttributes(curvedTunnelVis);
-    new G4PVPlacement(fastStraight ? fastRotation : 0,
-            fastStraight ? fastMidpoint : G4ThreeVector(), curvedTunnelLogic,
-            "gargoyle_curved_tunnel_air_phys", curvedWorldLogic,
-            false, grVolumeID::TunnelAir, false);
 
     // ---------------------------------------------------------------------
-    // Hermetic detector layers swept through the same centerline chords.
-    // Veto layers remain continuous. Tracker sublayers are divided into
-    // approximately 50 cm physical cells in both transverse and longitudinal
-    // directions so navigation remains tractable over the 110 m centerline.
+    // Mitre-plane cutters, one pair per station. The forward cutter keeps
+    // everything on the far side of the station along the local bisector
+    // normal (used to trim a chord's near end); the backward cutter keeps
+    // everything on the near side (used to trim the previous chord's far
+    // end). At the two open ends of the whole selection, stationAngles
+    // already equals the chord's own angle, so the cut lands exactly on
+    // the flat end cap with no effect -- the same construction handles
+    // interior joints and open ends uniformly.
+    //
+    // An earlier attempt at this used 50 m cutter boxes and found that
+    // Geant4's polyhedron visualizer couldn't render the result. That
+    // turned out to be neither about it being a Boolean solid (a single
+    // intersection renders fine) nor about chaining two intersections in
+    // a row (also fine in isolation) -- it was specifically the cutter
+    // box's LATERAL size relative to the ~3 m tunnel cross-section that
+    // pushed HepPolyhedronProcessor's CSG clipping into a numerically
+    // degenerate regime. A cutter sized to comfortably cover the real
+    // cross-section (a few metres, not fifty) renders correctly at every
+    // scale tested.
+    //
+    // The cutter's REACH along the mitre normal is a separate axis and
+    // must be sized independently: each cutter is a *finite* box standing
+    // in for an infinite half-space, so if its far face doesn't clear the
+    // entire chord it's trimming, that face silently amputates whatever
+    // chord material lies beyond it -- not at the joint, but wherever the
+    // box happens to end. With a cube-shaped cutter this was invisible for
+    // short chords (their whole length fit inside the box) but chewed a
+    // real, metres-wide bite out of every chord longer than twice the
+    // cutter half-size, which is exactly what produced the visible gaps
+    // in long straight runs. The fix keeps the lateral half-size small
+    // (still just a few metres, so the polyhedron export stays healthy --
+    // verified with a null-polyhedron sweep over every active volume in
+    // the full 15-chord tunnel).
+    //
+    // The reach is sized PER STATION, from only the one or two chords that
+    // actually meet there -- not from the longest chord anywhere in the
+    // tunnel. A single tunnel-wide reach first seemed simpler, but it means
+    // every station's cutter (and every Boolean solid built from it, right
+    // down to the shortest chord at the far end of the tunnel) inherits the
+    // extent of whichever chord happens to be longest -- for this tunnel,
+    // the ~23 m first chord bloats every other station's cutter to match,
+    // even ones joining two ~4 m chords deep in a bend. That extra extent
+    // doesn't move the actual mitred surface, but it does blow up the
+    // bounding box Geant4's navigator voxelises the ~5000-volume tunnel
+    // world on, which turned a ~2 minute run into an 8+ minute one for the
+    // full tunnel (a single-chord selection has nothing else for a bloated
+    // box to collide with in the voxelisation, which is why that case
+    // stayed fast). Matching each cutter to its own local chords keeps
+    // every station's extent close to what it actually needs.
+    // ---------------------------------------------------------------------
+    const G4double miterBoxLateral = 8.0 * m;
+    const G4double miterCutterMargin = 2.0 * m;
+    std::vector<G4double> miterBoxReach(tunnelStations.size(), 0.0);
+    for (std::size_t st = 0; st < tunnelStations.size(); ++st) {
+        G4double localHalfChord = 0.0;
+        if (st > 0) localHalfChord = std::max(localHalfChord, 0.5 * chordLengths[st - 1]);
+        if (static_cast<G4int>(st) < tunnelChordCount) localHalfChord = std::max(localHalfChord, 0.5 * chordLengths[st]);
+        miterBoxReach[st] = localHalfChord + miterCutterMargin;
+    }
+    std::vector<G4VSolid*> forwardCutters(tunnelStations.size(), 0);
+    std::vector<G4VSolid*> backwardCutters(tunnelStations.size(), 0);
+    for (std::size_t st = 0; st < tunnelStations.size(); ++st) {
+        std::ostringstream boxName;
+        boxName << "gargoyle_miter_box_" << st;
+        G4Box* rawBox = new G4Box(boxName.str(), miterBoxLateral, miterBoxLateral, miterBoxReach[st]);
+        G4RotationMatrix* boxRot = new G4RotationMatrix();
+        boxRot->rotateY(-stationAngles[st]);
+        const G4ThreeVector normal(std::sin(stationAngles[st]), 0.0,
+                                   std::cos(stationAngles[st]));
+        const G4ThreeVector stationPos(tunnelStations[st].x(), 0.0,
+                                       tunnelStations[st].y());
+        forwardCutters[st] = new G4DisplacedSolid(boxName.str() + "_fwd", rawBox,
+                boxRot, stationPos + miterBoxReach[st] * normal);
+        backwardCutters[st] = new G4DisplacedSolid(boxName.str() + "_bwd", rawBox,
+                boxRot, stationPos - miterBoxReach[st] * normal);
+    }
+
+    // Builds the portion of chord `chordIndex`'s straight extrusion that
+    // lies between the mitre planes at both of its ends, expressed
+    // directly in world coordinates (so the result is placed with an
+    // identity transform). `overhang` only has to comfortably clear how
+    // far the mitre plane can reach into the chord at the sharpest bend
+    // actually present in this tunnel (well under 1 m); unlike the cutter
+    // box it doesn't need to be generous.
+    const G4double chordOverhang = 2.0 * m;
+    auto buildChordSegment = [&](const G4String& name,
+                                 const std::vector<G4TwoVector>& profile,
+                                 G4int chordIndex) -> G4VSolid* {
+        G4VSolid* raw = makeFastExtrudedSolid(name + "_raw", profile,
+                0.5 * chordLengths[chordIndex] + chordOverhang);
+        G4VSolid* world = new G4DisplacedSolid(name + "_world", raw,
+                chordRotations[chordIndex], chordMidpoints[chordIndex]);
+        G4VSolid* trimmedNear = new G4IntersectionSolid(name + "_near", world,
+                forwardCutters[chordIndex]);
+        return new G4IntersectionSolid(name, trimmedNear,
+                backwardCutters[chordIndex + 1]);
+    };
+
+    // ---------------------------------------------------------------------
+    // Per-chord envelope: one mitred air volume per chord, holding that
+    // chord's own rock shell and every active layer as its daughters,
+    // instead of placing all of it flat under curvedWorldLogic.
+    //
+    // With everything flat, "full" mode puts on the order of 5000 active
+    // volumes (mostly the ~10 cm phi strips) as direct siblings under one
+    // mother, and every navigator step has to search across all of them.
+    // That's a large part of why a heavy e+/gamma run went from ~2 minutes
+    // to over 8: each of the many secondary tracks in a shower takes many
+    // steps through the densely-divided tracker, and every step pays for
+    // a search across the full flat sibling list plus a nested-Boolean-
+    // solid Inside()/DistanceToIn() call on each candidate. Grouping each
+    // chord's ~330 daughters under their own envelope turns that into a
+    // ~15-way choice of envelope followed by a ~330-way search inside just
+    // one of them -- an order of magnitude fewer candidates per step,
+    // without changing what any daughter's solid or placement actually is.
+    //
+    // The envelope reuses outerRockProfile (built with the same
+    // buildChordSegment mitre cut as the rock shell it contains), so
+    // neighbouring envelopes meet exactly the same way neighbouring rock
+    // segments already do, and its 1 m margin beyond the tunnel wall
+    // comfortably contains every active layer, which reaches at most
+    // ~40 cm beyond the wall.
+    // ---------------------------------------------------------------------
+    std::vector<G4LogicalVolume*> chordEnvelopeLogics(tunnelChordCount, 0);
+    for (G4int i = 0; i < tunnelChordCount; ++i) {
+        std::ostringstream envName;
+        envName << "gargoyle_chord_envelope_" << i;
+        G4VSolid* envSolid = buildChordSegment(envName.str() + "_solid", outerRockProfile, i);
+        G4LogicalVolume* envLogic = new G4LogicalVolume(
+                envSolid, tunnelAir, envName.str() + "_logic", 0, 0, 0);
+        G4VisAttributes* envVis = new G4VisAttributes();
+        envVis->SetVisibility(false);
+        envLogic->SetVisAttributes(envVis);
+        new G4PVPlacement(0, G4ThreeVector(), envLogic, envName.str() + "_phys",
+                curvedWorldLogic, false, i, false);
+        chordEnvelopeLogics[i] = envLogic;
+    }
+
+    // ---------------------------------------------------------------------
+    // Rock shell, one exactly-mitred segment per selected chord, now a
+    // daughter of that chord's own envelope rather than curvedWorldLogic.
+    // ---------------------------------------------------------------------
+    for (G4int i = 0; i < tunnelChordCount; ++i) {
+        std::ostringstream rockName;
+        rockName << "gargoyle_curved_rock_chord" << i;
+
+        G4VSolid* rockOuterSeg = buildChordSegment(rockName.str() + "_outer",
+                outerRockProfile, i);
+        G4VSolid* rockCutoutSeg = buildChordSegment(rockName.str() + "_cutout",
+                fastTunnelProfile, i);
+        G4VSolid* rockSeg = new G4SubtractionSolid(rockName.str() + "_solid",
+                rockOuterSeg, rockCutoutSeg);
+        G4LogicalVolume* rockLogic = new G4LogicalVolume(
+                rockSeg, tunnelRock, rockName.str() + "_logic", 0, 0, 0);
+        G4VisAttributes* rockVis = new G4VisAttributes(
+                G4Colour(0.55, 0.50, 0.45, 0.35));
+        rockVis->SetVisibility(true);
+        rockVis->SetForceSolid(true);
+        rockLogic->SetVisAttributes(rockVis);
+        new G4PVPlacement(0, G4ThreeVector(), rockLogic, "rockPhysic",
+                chordEnvelopeLogics[i], false, grVolumeID::Rock, false);
+    }
+
+    // ---------------------------------------------------------------------
+    // Hermetic detector layers, one straight segment per selected chord.
+    // The floor, walls, wall extensions, phi-segmented tracker strips, and
+    // the z-longitudinal tracker are all built with buildChordSegment, the
+    // same exact mitre cut used for the rock: neighbouring chords meet
+    // with no gap and no overlap at every joint. The z-longitudinal
+    // tracker used to be split into ~10 cm replica cells for extra
+    // longitudinal resolution; see the comment near trackerSegmentWidth
+    // below for why that was dropped in favour of one mitred volume per
+    // chord.
     // ---------------------------------------------------------------------
     G4Material* matPlScin = G4Material::GetMaterial("plScintillator", false);
     if (!matPlScin) {
@@ -747,141 +794,6 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
         for (std::size_t i = outside.size(); i > 0; --i) profile.push_back(outside[i - 1]);
         return profile;
     };
-    auto sweepProfile = [&](const G4String& name, const CrossPath& inputProfile) {
-        CrossPath profile = inputProfile;
-        G4double signedArea = 0.0;
-        for (std::size_t i = 0; i < profile.size(); ++i) {
-            const std::size_t next = (i + 1) % profile.size();
-            signedArea += profile[i].x() * profile[next].y()
-                        - profile[next].x() * profile[i].y();
-        }
-        if (signedArea < 0.0) std::reverse(profile.begin(), profile.end());
-
-        G4TessellatedSolid* solid = new G4TessellatedSolid(name + "_solid");
-        std::vector<TunnelRing> rings;
-        rings.reserve(tunnelStations.size());
-        for (std::size_t station = 0; station < tunnelStations.size(); ++station) {
-            TunnelRing ring;
-            ring.reserve(profile.size());
-            const G4double cosineAngle = std::cos(stationAngles[station]);
-            const G4double sineAngle = std::sin(stationAngles[station]);
-            for (std::size_t vertex = 0; vertex < profile.size(); ++vertex) {
-                const G4double lateral = profile[vertex].x();
-                ring.push_back(G4ThreeVector(
-                        tunnelStations[station].x() + cosineAngle * lateral,
-                        profile[vertex].y(),
-                        tunnelStations[station].y() - sineAngle * lateral));
-            }
-            rings.push_back(ring);
-        }
-        for (std::size_t station = 0; station + 1 < rings.size(); ++station) {
-            for (std::size_t vertex = 0; vertex < profile.size(); ++vertex) {
-                const std::size_t next = (vertex + 1) % profile.size();
-                solid->AddFacet(new G4TriangularFacet(
-                        rings[station][vertex], rings[station][next],
-                        rings[station+1][next], ABSOLUTE));
-                solid->AddFacet(new G4TriangularFacet(
-                        rings[station][vertex], rings[station+1][next],
-                        rings[station+1][vertex], ABSOLUTE));
-            }
-        }
-        std::vector<G4int> capTriangles;
-        if (!G4GeomTools::TriangulatePolygon(profile, capTriangles)) {
-            G4Exception("grDetectorConstruction::SetupGeometry", "InvalidShellProfile",
-                        FatalException, "Could not triangulate detector shell profile.");
-        }
-        for (std::size_t i = 0; i + 2 < capTriangles.size(); i += 3) {
-            const G4int a = capTriangles[i];
-            const G4int b = capTriangles[i+1];
-            const G4int c = capTriangles[i+2];
-            const G4double triangleArea =
-                    (profile[b].x() - profile[a].x()) * (profile[c].y() - profile[a].y())
-                  - (profile[b].y() - profile[a].y()) * (profile[c].x() - profile[a].x());
-            const G4int forwardB = triangleArea > 0.0 ? b : c;
-            const G4int forwardC = triangleArea > 0.0 ? c : b;
-            solid->AddFacet(new G4TriangularFacet(
-                    rings.front()[a], rings.front()[forwardC],
-                    rings.front()[forwardB], ABSOLUTE));
-            solid->AddFacet(new G4TriangularFacet(
-                    rings.back()[a], rings.back()[forwardB],
-                    rings.back()[forwardC], ABSOLUTE));
-        }
-        solid->SetSolidClosed(true);
-        return solid;
-    };
-    std::vector<G4double> tunnelStationDistance(tunnelStations.size(), 0.0);
-    for (std::size_t station = 1; station < tunnelStations.size(); ++station) {
-        const G4double dx = tunnelStations[station].x() - tunnelStations[station - 1].x();
-        const G4double dz = tunnelStations[station].y() - tunnelStations[station - 1].y();
-        tunnelStationDistance[station] = tunnelStationDistance[station - 1]
-                                       + std::sqrt(dx * dx + dz * dz);
-    }
-    auto interpolatedRing = [&](const std::vector<G4TwoVector>& profile, G4double distance) {
-        std::size_t chord = 0;
-        while (chord + 2 < tunnelStationDistance.size()
-               && distance > tunnelStationDistance[chord + 1]) ++chord;
-        const G4double chordLength = tunnelStationDistance[chord + 1] - tunnelStationDistance[chord];
-        const G4double fraction = chordLength > 0.0
-                ? (distance - tunnelStationDistance[chord]) / chordLength : 0.0;
-        const G4double x = tunnelStations[chord].x() + fraction * (tunnelStations[chord + 1].x() - tunnelStations[chord].x());
-        const G4double z = tunnelStations[chord].y() + fraction * (tunnelStations[chord + 1].y() - tunnelStations[chord].y());
-        const G4double angle = stationAngles[chord] + fraction * (stationAngles[chord + 1] - stationAngles[chord]);
-        TunnelRing ring; ring.reserve(profile.size());
-        for (std::size_t vertex = 0; vertex < profile.size(); ++vertex) {
-            const G4double lateral = profile[vertex].x();
-            ring.push_back(G4ThreeVector(x + std::cos(angle) * lateral, profile[vertex].y(), z - std::sin(angle) * lateral));
-        }
-        return ring;
-    };
-    auto sweepProfileInterval = [&](const G4String& name, const CrossPath& inputProfile,
-                                    G4double startDistance, G4double endDistance) {
-        CrossPath profile = inputProfile;
-        G4double signedArea = 0.0;
-        for (std::size_t i = 0; i < profile.size(); ++i) {
-            const std::size_t next = (i + 1) % profile.size();
-            signedArea += profile[i].x() * profile[next].y() - profile[next].x() * profile[i].y();
-        }
-        if (signedArea < 0.0) std::reverse(profile.begin(), profile.end());
-        const TunnelRing first = interpolatedRing(profile, startDistance);
-        const TunnelRing last = interpolatedRing(profile, endDistance);
-        G4TessellatedSolid* solid = new G4TessellatedSolid(name + "_solid");
-        for (std::size_t vertex = 0; vertex < profile.size(); ++vertex) {
-            const std::size_t next = (vertex + 1) % profile.size();
-            solid->AddFacet(new G4TriangularFacet(first[vertex], first[next], last[next], ABSOLUTE));
-            solid->AddFacet(new G4TriangularFacet(first[vertex], last[next], last[vertex], ABSOLUTE));
-        }
-        std::vector<G4int> capTriangles;
-        if (!G4GeomTools::TriangulatePolygon(profile, capTriangles))
-            G4Exception("grDetectorConstruction::SetupGeometry", "InvalidStripProfile", FatalException, "Could not triangulate tracker strip profile.");
-        for (std::size_t i = 0; i + 2 < capTriangles.size(); i += 3) {
-            const G4int a = capTriangles[i], b = capTriangles[i + 1], c = capTriangles[i + 2];
-            const G4double area = (profile[b].x() - profile[a].x()) * (profile[c].y() - profile[a].y())
-                                - (profile[b].y() - profile[a].y()) * (profile[c].x() - profile[a].x());
-            const G4int forwardB = area > 0.0 ? b : c, forwardC = area > 0.0 ? c : b;
-            solid->AddFacet(new G4TriangularFacet(first[a], first[forwardC], first[forwardB], ABSOLUTE));
-            solid->AddFacet(new G4TriangularFacet(last[a], last[forwardB], last[forwardC], ABSOLUTE));
-        }
-        solid->SetSolidClosed(true);
-        return solid;
-    };
-    std::vector<G4LogicalVolume*> activeLogics;
-    auto placeActive = [&](const G4String& name, const std::vector<G4TwoVector>& profile,
-                           G4int copyNo, const G4Colour& colour) {
-        G4VSolid* solid = fastStraight
-                ? makeFastExtrudedSolid(name + "_extruded_solid", profile,
-                                        0.5 * constructedTunnelLength)
-                : static_cast<G4VSolid*>(sweepProfile(name, profile));
-        G4LogicalVolume* logic = new G4LogicalVolume(solid,
-            matPlScin, name + "_logic", 0, 0, 0);
-        G4VisAttributes* vis = new G4VisAttributes(colour);
-        vis->SetVisibility(true); vis->SetForceSolid(true);
-        logic->SetVisAttributes(vis);
-        new G4PVPlacement(fastStraight ? fastRotation : 0,
-            fastStraight ? fastMidpoint : G4ThreeVector(), logic, name + "_phys",
-            fastStraight ? curvedWorldLogic : curvedTunnelLogic,
-            false, copyNo, false);
-        activeLogics.push_back(logic);
-    };
     auto alternateColour = [](const G4Colour& colour) {
         const G4double blend = 0.25;
         return G4Colour(colour.GetRed() * (1.0 - blend) + blend,
@@ -889,62 +801,39 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                         colour.GetBlue() * (1.0 - blend) + blend, colour.GetAlpha());
     };
 
-    const G4double trackerSegmentWidth = 10.0 * cm;
-
-    auto placeFastLongitudinal = [&](const G4String& baseName,
-                                     const G4String& physicalBaseName,
-                                     const CrossPath& profile,
-                                     G4double wallOffset,
-                                     G4double thickness,
-                                     const G4Colour& colour) {
-        const G4int segmentCount = std::max(2, static_cast<G4int>(
-                std::ceil(constructedTunnelLength / trackerSegmentWidth)));
-        const G4int evenSegmentCount = (segmentCount % 2) ? segmentCount + 1 : segmentCount;
-        const G4double actualWidth = constructedTunnelLength / evenSegmentCount;
-        CrossPath shellProfile = bandProfile(profile, wallOffset, thickness);
-        G4VSolid* envelopeSolid = makeFastExtrudedSolid(
-                baseName + "_envelope_solid", shellProfile,
-                0.5 * constructedTunnelLength);
-        G4LogicalVolume* envelopeLogic = new G4LogicalVolume(
-                envelopeSolid, tunnelAir, baseName + "_envelope_logic", 0, 0, 0);
-        G4VisAttributes* envelopeVis = new G4VisAttributes();
-        envelopeVis->SetVisibility(false);
-        envelopeLogic->SetVisAttributes(envelopeVis);
-        new G4PVPlacement(fastStraight ? fastRotation : 0,
-                fastStraight ? fastMidpoint : G4ThreeVector(), envelopeLogic,
-                baseName + "_envelope_phys",
-                fastStraight ? curvedWorldLogic : curvedTunnelLogic,
-                false, 0, false);
-        const G4int cellCount = evenSegmentCount / 2;
-        const G4double cellWidth = 2.0 * actualWidth;
-        G4VSolid* cellSolid = makeFastExtrudedSolid(
-                baseName + "_cell_solid", shellProfile, 0.5 * cellWidth);
-        G4LogicalVolume* cellLogic = new G4LogicalVolume(
-                cellSolid, tunnelAir, baseName + "_cell_logic", 0, 0, 0);
-        G4VisAttributes* cellVis = new G4VisAttributes();
-        cellVis->SetVisibility(false);
-        cellLogic->SetVisAttributes(cellVis);
-        new G4PVReplica(physicalBaseName + "_phys_cell", cellLogic,
-                envelopeLogic, kZAxis, cellCount, cellWidth);
-        G4VSolid* stripSolid = makeFastExtrudedSolid(
-                baseName + "_solid", shellProfile, 0.5 * actualWidth);
-        for (G4int parity = 0; parity < 2; ++parity) {
-            std::ostringstream logicName, physicalName;
-            logicName << baseName << "_logic_" << parity;
-            physicalName << physicalBaseName << "_phys_" << parity;
-            G4LogicalVolume* stripLogic = new G4LogicalVolume(
-                    stripSolid, matPlScin, logicName.str(), 0, 0, 0);
-            G4VisAttributes* vis = new G4VisAttributes(
-                    parity ? alternateColour(colour) : colour);
-            vis->SetVisibility(true);
-            vis->SetForceSolid(true);
-            stripLogic->SetVisAttributes(vis);
-            const G4double z = (parity ? 0.5 : -0.5) * actualWidth;
-            new G4PVPlacement(0, G4ThreeVector(0, 0, z), stripLogic,
-                    physicalName.str(), cellLogic, false, parity, false);
-            activeLogics.push_back(stripLogic);
+    std::vector<G4LogicalVolume*> activeLogics;
+    auto placeActive = [&](const G4String& name, const std::vector<G4TwoVector>& profile,
+                           G4int copyNo, const G4Colour& colour) {
+        for (G4int i = 0; i < tunnelChordCount; ++i) {
+            std::ostringstream chordName;
+            chordName << name << "_c" << i;
+            G4VSolid* solid = buildChordSegment(chordName.str() + "_extruded_solid",
+                    profile, i);
+            G4LogicalVolume* logic = new G4LogicalVolume(solid,
+                matPlScin, chordName.str() + "_logic", 0, 0, 0);
+            G4VisAttributes* vis = new G4VisAttributes(colour);
+            vis->SetVisibility(true); vis->SetForceSolid(true);
+            logic->SetVisAttributes(vis);
+            new G4PVPlacement(0, G4ThreeVector(), logic,
+                chordName.str() + "_phys", chordEnvelopeLogics[i], false, copyNo, false);
+            activeLogics.push_back(logic);
         }
     };
+
+    const G4double trackerSegmentWidth = 10.0 * cm;
+
+    // The z-longitudinal tracker used to be divided into ~10 cm replica
+    // cells along each chord for longitudinal (z) tracking resolution.
+    // That resolution isn't needed: G4PVReplica's kZAxis slicing requires
+    // a mother solid with a constant cross-section along the replication
+    // axis, which an exactly-mitred (angle-cut) envelope cannot have, so
+    // the replica version was the one active layer that couldn't be
+    // closed up with the rest. Each chord's z-tracker band is now a
+    // single mitred volume, built with the same buildChordSegment/
+    // placeActive path as the floor, walls, and phi strips -- exact,
+    // gap-free, overlap-free joints, and one volume per chord instead of
+    // O(chordLength / 10 cm) of them. Position within a chord still comes
+    // from the hit's stored 3D coordinates, same as before.
 
     const G4double wallGap = 0.1 * cm, floorThickness = 2.0 * cm;
     const G4double sublayerThickness = 1.5 * cm, sublayerGap = 1.0 * mm;
@@ -978,7 +867,7 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     const G4double stationGaps[4] = {0.0*cm, 12.0*cm, 24.0*cm, 36.0*cm};
     const G4int layerNames[4] = {1, 3, 2, 5};
     const G4int phiIDs[4] = {1000, 2000, 3000, 4000};
-    const G4int zIDs[4] = {100000, 200000, 300000, 400000};
+    const G4int zIDs[4] = {10000, 20000, 30000, 40000};
     const G4Colour phiColours[4] = {G4Colour(0.1,0.8,0.1,.75), G4Colour(0.2,.85,.5,.75), G4Colour(.9,.9,.1,.75), G4Colour(.95,.55,.2,.75)};
     const G4Colour zColours[4] = {G4Colour(.1,.55,.95,.75), G4Colour(.2,.65,.95,.75), G4Colour(.95,.45,.1,.75), G4Colour(.95,.25,.55,.75)};
     for (G4int station = 0; station < 4; ++station) {
@@ -991,36 +880,8 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                         phiIDs[station] + static_cast<G4int>(strip),
                         (strip % 2) ? alternateColour(phiColours[station]) : phiColours[station]);
         }
-        if (fastStraight) {
-            placeFastLongitudinal(zName.str(), zName.str(), upperPath,
-                    base + sublayerThickness + sublayerGap, sublayerThickness,
-                    zColours[station]);
-        } else {
-            const CrossPath longitudinalProfile = bandProfile(upperPath,
-                    base + sublayerThickness + sublayerGap, sublayerThickness);
-            const G4int longitudinalCount = static_cast<G4int>(
-                    std::ceil(tunnelStationDistance.back() / trackerSegmentWidth));
-            const G4double longitudinalWidth =
-                    tunnelStationDistance.back() / longitudinalCount;
-            for (G4int strip = 0; strip < longitudinalCount; ++strip) {
-                std::ostringstream stripName;
-                stripName << zName.str() << "_segment_" << strip;
-                G4LogicalVolume* logic = new G4LogicalVolume(
-                        sweepProfileInterval(stripName.str(), longitudinalProfile,
-                                strip * longitudinalWidth,
-                                (strip + 1) * longitudinalWidth),
-                        matPlScin, stripName.str() + "_logic", 0, 0, 0);
-                G4VisAttributes* vis = new G4VisAttributes(
-                        (strip % 2) ? alternateColour(zColours[station])
-                                    : zColours[station]);
-                vis->SetVisibility(true);
-                vis->SetForceSolid(true);
-                logic->SetVisAttributes(vis);
-                new G4PVPlacement(0, G4ThreeVector(), logic, stripName.str(),
-                        curvedTunnelLogic, false, zIDs[station] + strip, false);
-                activeLogics.push_back(logic);
-            }
-        }
+        placeActive(zName.str(), bandProfile(upperPath, base + sublayerThickness + sublayerGap, sublayerThickness),
+                    zIDs[station], zColours[station]);
         if (station > 0) {
             const G4int wallBase = 100 + 10 * (station + 1);
             std::ostringstream wr, wl; wr << "gargoyle_scint_phys_wall_extension_" << station << "_right"; wl << "gargoyle_scint_phys_wall_extension_" << station << "_left";
