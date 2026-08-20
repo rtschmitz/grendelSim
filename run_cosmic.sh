@@ -8,4 +8,4 @@ repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 cmake -S "$repo_dir" -B "$repo_dir/build"
 cmake --build "$repo_dir/build" --parallel
 cd "$repo_dir/build"
-./grendelSim cosmic ../macros/cosmic_muon.mac
+./grendelSim cosmic ../macros/cosmic_full.mac
