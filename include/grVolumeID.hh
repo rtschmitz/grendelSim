@@ -9,7 +9,7 @@ namespace grVolumeID {
 enum FixedID { Unknown = 0, TunnelAir = 1, Rock = 2 };
 
 inline G4int TrackerBase(const G4String& name) {
-  const G4bool z = name.contains("_z_phys");
+  const G4bool z = name.contains("_z_");
   if (name.contains("gargoyle_si_layer1")) return z ? 10000 : 1000;
   if (name.contains("gargoyle_si_layer3")) return z ? 20000 : 2000;
   if (name.contains("gargoyle_si_layer2")) return z ? 30000 : 3000;

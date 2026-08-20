@@ -4,11 +4,10 @@
 /gps/particle mu-
 /gps/pos/type Plane
 /gps/pos/shape Rectangle
-# The curved model's longest straight chord is the 23.14 m lower section,
-# parallel to global Z. Its centerline midpoint is approximately
-# (x,z) = (0.033,-26.595) m. Place the source plane above the rock envelope,
+# This macro targets the 'straight' curved-tunnel group; select it with GRENDEL_TUNNEL_MODE=straight.
+# The source plane remains above the rock envelope with the same dimensions.
 # horizontal in X-Z, with the GPS normal oriented so muons travel downward.
-/gps/pos/centre 0 300 -2659.5 cm
+/gps/pos/centre 3.324 300 -2659.48 cm
 /gps/pos/halfx 340 cm
 /gps/pos/halfy 575 cm #500cm
 #/gps/pos/halfx 10 cm

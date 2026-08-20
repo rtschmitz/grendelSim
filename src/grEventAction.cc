@@ -24,7 +24,8 @@ void grEventAction::BeginOfEventAction(const G4Event* event) {
     G4EventManager::GetEventManager()->SetUserInformation(info);
   }
 
-  if (scintCollID < 0) scintCollID = G4SDManager::GetSDMpointer()->GetCollectionID("scintCollection");
+  if (scintCollID < 0 && G4SDManager::GetSDMpointer()->FindSensitiveDetector("Scint_SD", false))
+    scintCollID = G4SDManager::GetSDMpointer()->GetCollectionID("scintCollection");
 
   info->Reset();
   info->SetEventID(event->GetEventID());

@@ -47,6 +47,15 @@ At the Geant4 prompt, load the visualization setup and generate events:
 The selected Geant4 installation must have an OpenGL visualization driver. Headless batch installations can still be built with `-DGRENDEL_WITH_UIVIS=OFF`, but zero-argument interactive mode is unavailable in that build.
 
 ## Cosmic-muon workflow
+Dedicated curved-tunnel test macros are provided for each geometry group. Each dedicated macro selects its matching group automatically; an explicit GRENDEL_TUNNEL_MODE override takes precedence:
+
+```sh
+./grendelSim cosmic ../macros/cosmic_straight.mac
+./grendelSim cosmic ../macros/cosmic_shallow.mac
+./grendelSim cosmic ../macros/cosmic_turn1.mac
+./grendelSim cosmic ../macros/cosmic_turn2.mac
+```
+
 
 Entry point: `run_cosmic.sh`. It builds the project and runs 10 events from `macros/cosmic_muon.mac`:
 
@@ -85,6 +94,10 @@ Beam particle type, event offset, rescaling, and four-vector path are configured
 The upper tunnel tracker consists of four tracker stations. The wall-adjacent station begins 1 mm from the tunnel wall, preserving the previous wall clearance. The other stations have edge-to-edge clear distances of 12 cm, 24 cm, and 36 cm from the inward face of the wall station. Each station contains a 1.5 cm phi-segmented scintillator plane, a 1 mm air gap, and a 1.5 cm longitudinally segmented scintillator plane, for a 3.1 cm envelope. Beneath each inner station, a pair of unsegmented 3.1 cm-thick veto volumes follows the same lower-wall endpoints as the original wall veto and extends down to the floor boundary; no additional floor layers are created. Both orientations have a nominal 1 cm channel pitch; the longitudinal planes use native Geant4 replicas for efficient navigation.
 
 Volume IDs use one documented namespace. `0` is unknown, `1` is tunnel/world air, and `2` is rock. Veto IDs are `100` for the floor; `110--111` for the original right/left walls; and `120--121`, `130--131`, and `140--141` for the right/left wall extensions at 12, 24, and 36 cm. Phi tracker ranges are `1000--1401`, `2000--2401`, `3000--3401`, and `4000--4401` at the wall, 12, 24, and 36 cm. Corresponding one-centimetre z ranges are `10000--11799`, `20000--21799`, `30000--31799`, and `40000--41799`. Output schema version 5 stores these identifiers in `scint_copyNo`, `scint_originVolumeID`, and each selected track’s `initialVolumeID` and `finalVolumeID`; the previous volume-name string branches are removed.
+
+## Curved tunnel segment selection
+
+The curved tunnel is divided into representative geometry groups and selected before construction. Set `TunnelGeometry/EnabledGroups` in `inputData/config/Geometry/onepc.ini` (copied to `build/config`) to `full`, `straight`, `turn1`, or `turn2`; comma-separated selections such as `straight,turn1` are accepted and are merged into the smallest contiguous window containing those groups. `straight` is the long lower straight section used by the shifted cosmic test plane. `turn1` and `turn2` include the representative approach and exit chords around each bend. For temporary overrides, set `GRENDEL_TUNNEL_MODE` to the same value when launching `grendelSim`; the environment variable takes precedence over the config file. The selected interval is the geometry that is constructed and therefore also the geometry shown by visualization.
 
 ## Output
 
