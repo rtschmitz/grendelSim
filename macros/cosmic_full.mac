@@ -2,21 +2,46 @@
 /run/initialize
 
 /gps/particle mu-
-/gps/pos/type Plane
-/gps/pos/shape Rectangle
-# The curved model's longest straight chord is the 23.14 m lower section,
-# parallel to global Z. Its centerline midpoint is approximately
-# (x,z) = (0.033,-26.595) m. Place the source plane above the rock envelope,
-# horizontal in X-Z, with the GPS normal oriented so muons travel downward.
-/gps/pos/centre 0 300 -2659.5 cm
-/gps/pos/halfx 340 cm
-/gps/pos/halfy 575 cm #500cm
-#/gps/pos/halfx 10 cm
-#/gps/pos/halfy 20 cm #500cm
+# Covers the entire curved tunnel (all 15 chords -- GRENDEL_TUNNEL_MODE=full,
+# the default), instead of one flat rectangle sized for a single chord
+# group. Position is confined to "gargoyle_cosmicSource", a thin per-chord
+# volume built in grDetectorConstruction.cc that follows the same mitred
+# contour as the rock shell, offset just above its ceiling. GPS rejection-
+# samples inside the bounding Para box below and keeps only points that
+# land inside that volume; every chord shares the same volume name, so
+# GPS combines all of them automatically, weighted by volume -- which
+# here is exactly proportional to arc length, since the shell's cross-
+# section is identical at every chord.
+#
+# The bounding box and the source shell's own Y range are printed at
+# start-up ("cosmic source shell: ..."); regenerate these numbers with
+# `./grendelSim cosmic /path/to/a/run-initialize-only.mac` after any
+# geometry change and update the values below to match.
+/gps/pos/type Volume
+/gps/pos/shape Para
+/gps/pos/centre 0 300 0 cm
+/gps/pos/halfx 1518.5 cm
+/gps/pos/halfy 4161.36 cm
+/gps/pos/halfz 5 cm
 /gps/pos/rot1 1 0 0
 /gps/pos/rot2 0 0 -1
+/gps/pos/confine gargoyle_cosmicSource
 
+# GPS's "user" angular distribution defaults to reusing the POSITION
+# distribution's own rotation frame (Geant4's UserWRTSurface option,
+# default true) -- but that linkage is only wired up inside the Plane and
+# Surface position generators. G4SPSPosDistribution::GeneratePointsInVolume
+# never touches it, so with pos type Volume the angular frame would
+# silently fall back to raw world axes, and theta=0 would mean "straight
+# along -Z" instead of "straight down along -Y". Setting the angular frame
+# explicitly (identical to /gps/pos/rot1 and rot2 above) sidesteps that and
+# restores the same "theta measured from straight down" meaning the
+# straight/shallow/turn1/turn2 macros rely on implicitly via their Plane
+# source.
 /gps/ang/type user
+/gps/ang/surfnorm false
+/gps/ang/rot1 1 0 0
+/gps/ang/rot2 0 0 -1
 /gps/hist/type theta
 
 #based on propagated simulation of muons from surface. Units are in rad

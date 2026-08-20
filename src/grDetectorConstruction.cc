@@ -740,6 +740,62 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     }
 
     // ---------------------------------------------------------------------
+    // Cosmic-ray source shell: a thin, physically inert (air) volume that
+    // hugs the outside of the rock shell using the exact same per-chord
+    // mitred contour, offset above the rock's true ceiling apex. This lets
+    // the cosmic macros use /gps/pos/type Volume + /gps/pos/confine to
+    // sample muon vertices over the whole curved tunnel's overburden
+    // footprint instead of one flat rectangle sized for a single chord
+    // group. Every chord's placement shares the same physical-volume name
+    // ("gargoyle_cosmicSource"), so GPS's confine finds all of them and
+    // combines them weighted by volume -- since the shell's cross-section
+    // is identical at every chord, that's exactly proportional to arc
+    // length, so longer chords naturally get proportionally more source
+    // area with no per-chord weighting needed in the macro.
+    //
+    // Kept as a thin slab (not a full wrap of the rock cross-section) on
+    // purpose: cosmic muons only ever arrive from the sky, so only the
+    // rock's upward-facing side needs a source region above it. A full
+    // wrap would also generate primaries under the floor and outside the
+    // walls, most of which would be wasted (or wrong) given the
+    // downward-biased zenith-angle distribution.
+    // ---------------------------------------------------------------------
+    G4double outerRockCeilingY = outerRockProfile.front().y();
+    for (const auto& point : outerRockProfile) {
+        outerRockCeilingY = std::max(outerRockCeilingY, point.y());
+    }
+    const G4double cosmicSourceMargin = 20.0 * cm;
+    const G4double cosmicSourceThickness = 10.0 * cm;
+    // 1 m margin beyond the rock's own outer half-width (2.45 m: 1.45 m
+    // tunnel cavity + 1.0 m rock shell) on each side, everywhere along the
+    // curve -- 6.9 m full width, rather than hugging the rock's own outer
+    // width with no slack.
+    const G4double cosmicSourceHalfWidth = 345.0 * cm;
+    const G4double cosmicSourceInnerY = outerRockCeilingY + cosmicSourceMargin;
+    const G4double cosmicSourceOuterY = cosmicSourceInnerY + cosmicSourceThickness;
+    std::vector<G4TwoVector> cosmicSourceProfile = {
+        G4TwoVector(-cosmicSourceHalfWidth, cosmicSourceInnerY),
+        G4TwoVector( cosmicSourceHalfWidth, cosmicSourceInnerY),
+        G4TwoVector( cosmicSourceHalfWidth, cosmicSourceOuterY),
+        G4TwoVector(-cosmicSourceHalfWidth, cosmicSourceOuterY),
+    };
+    for (G4int i = 0; i < tunnelChordCount; ++i) {
+        std::ostringstream sourceName;
+        sourceName << "gargoyle_cosmic_source_chord" << i;
+        G4VSolid* sourceSeg = buildChordSegment(sourceName.str() + "_solid",
+                cosmicSourceProfile, i);
+        G4LogicalVolume* sourceLogic = new G4LogicalVolume(
+                sourceSeg, tunnelAir, sourceName.str() + "_logic", 0, 0, 0);
+        G4VisAttributes* sourceVis = new G4VisAttributes(
+                G4Colour(0.35, 0.75, 1.0, 0.25));
+        sourceVis->SetVisibility(true);
+        sourceVis->SetForceSolid(true);
+        sourceLogic->SetVisAttributes(sourceVis);
+        new G4PVPlacement(0, G4ThreeVector(), sourceLogic, "gargoyle_cosmicSource",
+                curvedWorldLogic, false, i, false);
+    }
+
+    // ---------------------------------------------------------------------
     // Hermetic detector layers, one straight segment per selected chord.
     // The floor, walls, wall extensions, phi-segmented tracker strips, and
     // the z-longitudinal tracker are all built with buildChordSegment, the
@@ -912,6 +968,21 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
                << G4BestUnit(curvedWorldHalfX, "Length") << ", "
                << G4BestUnit(curvedWorldHalfY, "Length") << ", "
                << G4BestUnit(curvedWorldHalfZ, "Length") << ")" << G4endl;
+        G4cout << "  cosmic source shell transverse width: "
+               << G4BestUnit(2.0 * cosmicSourceHalfWidth, "Length")
+               << " (rock outer half-width "
+               << G4BestUnit(outerMaxAbsX, "Length") << " + "
+               << G4BestUnit(cosmicSourceHalfWidth - outerMaxAbsX, "Length")
+               << " margin, each side)" << G4endl;
+        G4cout << "  cosmic source shell: X in ["
+               << G4BestUnit(stationMinX - cosmicSourceHalfWidth, "Length") << ", "
+               << G4BestUnit(stationMaxX + cosmicSourceHalfWidth, "Length")
+               << "], Z in ["
+               << G4BestUnit(stationMinZ - cosmicSourceHalfWidth, "Length") << ", "
+               << G4BestUnit(stationMaxZ + cosmicSourceHalfWidth, "Length")
+               << "], Y in ["
+               << G4BestUnit(cosmicSourceInnerY, "Length") << ", "
+               << G4BestUnit(cosmicSourceOuterY, "Length") << "]" << G4endl;
     }
 
     return curvedWorldPhysical;

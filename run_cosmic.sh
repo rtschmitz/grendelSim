@@ -12,4 +12,4 @@ fi
 cmake "${cmake_args[@]}"
 cmake --build "$repo_dir/build" --parallel
 cd "$repo_dir/build"
-./grendelSim cosmic ../macros/cosmic_muon.mac
+./grendelSim cosmic ../macros/cosmic_full.mac
