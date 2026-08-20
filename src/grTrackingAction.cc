@@ -28,10 +28,10 @@
 //_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
 grTrackingAction::grTrackingAction(grHistoManager* histo):
   histoManager(histo), verbose(0),
-  gammaTrackStorage(true),
+  gammaTrackStorage(false),
   neutronTrackStorage(false),
   muonTrackStorage(true),
-  electronTrackStorage(true),
+  electronTrackStorage(false),
   mcpTrackStorage(true),
   trackID(-1),parentID(-1),
   particleName(""),
