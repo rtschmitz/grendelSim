@@ -29,7 +29,7 @@
 grTrackingAction::grTrackingAction(grHistoManager* histo):
   histoManager(histo), verbose(0),
   gammaTrackStorage(false),
-  neutronTrackStorage(false),
+  neutronTrackStorage(true),
   muonTrackStorage(true),
   electronTrackStorage(false),
   mcpTrackStorage(true),
