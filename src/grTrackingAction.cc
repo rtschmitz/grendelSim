@@ -32,7 +32,7 @@ grTrackingAction::grTrackingAction(grHistoManager* histo):
   neutronTrackStorage(true),
   muonTrackStorage(true),
   electronTrackStorage(false),
-  mcpTrackStorage(true),
+  kaonTrackStorage(true),
   trackID(-1),parentID(-1),
   particleName(""),
   initialVolumeName(""),
@@ -68,7 +68,7 @@ void grTrackingAction::PreUserTrackingAction(const G4Track* aTrack)
   //grNeutronTrack *neutronTrack = new grNeutronTrack();
   //grMuonTrack *muonTrack = new grMuonTrack();
   //grElectronTrack *electronTrack = new grElectronTrack();
-  //grMCPTrack *mcpTrack = new grMCPTrack();
+  //grKaonTrack *kaonTrack = new grKaonTrack();
 
 
   fpTrackingManager->SetUserTrackInformation(new grUserTrackInformation);
@@ -300,30 +300,30 @@ void grTrackingAction::PreUserTrackingAction(const G4Track* aTrack)
 
 
   //
-  //Store info about mcps
+  //Store info about kaons
   //
-  if( (particleName.contains("kaon")) //&& (eventInformation->GetMCPLastTrackID() != trackID)
-        && mcpTrackStorage){
-    eventInformation->SetMCPLastTrackID(trackID);
+  if( (particleName.contains("kaon")) //&& (eventInformation->GetKaonLastTrackID() != trackID)
+        && kaonTrackStorage){
+    eventInformation->SetKaonLastTrackID(trackID);
 
 
-      grMCPTrack *mcpTrack = new grMCPTrack();
-    mcpTrack->SetTrackID(trackID);
-    mcpTrack->SetPDGID(aTrack->GetDefinition()->GetPDGEncoding());
-    mcpTrack->SetParentID(parentID);
+      grKaonTrack *kaonTrack = new grKaonTrack();
+    kaonTrack->SetTrackID(trackID);
+    kaonTrack->SetPDGID(aTrack->GetDefinition()->GetPDGEncoding());
+    kaonTrack->SetParentID(parentID);
 
     //begin of track information
-    mcpTrack->SetTimeOfFirstProcess(initialTime/s);
-    mcpTrack->SetInitialEnergy(initialEnergy/MeV);
-    mcpTrack->SetFirstPositionX(initialPosition.getX()/m);
-    mcpTrack->SetFirstPositionY(initialPosition.getY()/m);
-    mcpTrack->SetFirstPositionZ(initialPosition.getZ()/m);
-    mcpTrack->SetFirstVolume(initialVolumeName);
-    mcpTrack->SetFirstProcessName(initialProcessName);
-    mcpTrack->SetFirstCopyNo(initialCopyNo);
+    kaonTrack->SetTimeOfFirstProcess(initialTime/s);
+    kaonTrack->SetInitialEnergy(initialEnergy/MeV);
+    kaonTrack->SetFirstPositionX(initialPosition.getX()/m);
+    kaonTrack->SetFirstPositionY(initialPosition.getY()/m);
+    kaonTrack->SetFirstPositionZ(initialPosition.getZ()/m);
+    kaonTrack->SetFirstVolume(initialVolumeName);
+    kaonTrack->SetFirstProcessName(initialProcessName);
+    kaonTrack->SetFirstCopyNo(initialCopyNo);
 
-    eventInformation->AddMCPTrack(mcpTrack);
-  //  delete mcpTrack;
+    eventInformation->AddKaonTrack(kaonTrack);
+  //  delete kaonTrack;
   }
 }
 
@@ -445,20 +445,20 @@ void grTrackingAction::PostUserTrackingAction(const G4Track* aTrack){
 
 
   //
-  //Store information about mcp tracks
+  //Store information about kaon tracks
   //
-  if( (particleName.contains("kaon")) //&& (eventInformation->GetMCPLastTrackID() != trackID)
-      && mcpTrackStorage){
+  if( (particleName.contains("kaon")) //&& (eventInformation->GetKaonLastTrackID() != trackID)
+      && kaonTrackStorage){
     //end of track information
-    eventInformation->GetMCPTrack(trackID)->SetLastPositionX(finalPosition.getX()/m);
-    eventInformation->GetMCPTrack(trackID)->SetLastPositionY(finalPosition.getY()/m);
-    eventInformation->GetMCPTrack(trackID)->SetLastPositionZ(finalPosition.getZ()/m);
-    eventInformation->GetMCPTrack(trackID)->SetFinalEnergy(finalEnergy/MeV);
-    eventInformation->GetMCPTrack(trackID)->SetTotalTrackLength(finalTrackLength/m);
-    eventInformation->GetMCPTrack(trackID)->SetLastVolume(finalVolumeName);
-        eventInformation->GetMCPTrack(trackID)->SetLastProcessName(myEndProcessName);
-          eventInformation->GetMCPTrack(trackID)->SetTimeOfLastProcess(finalTime/s);
-    eventInformation->GetMCPTrack(trackID)->SetLastCopyNo(finalCopyNo);
+    eventInformation->GetKaonTrack(trackID)->SetLastPositionX(finalPosition.getX()/m);
+    eventInformation->GetKaonTrack(trackID)->SetLastPositionY(finalPosition.getY()/m);
+    eventInformation->GetKaonTrack(trackID)->SetLastPositionZ(finalPosition.getZ()/m);
+    eventInformation->GetKaonTrack(trackID)->SetFinalEnergy(finalEnergy/MeV);
+    eventInformation->GetKaonTrack(trackID)->SetTotalTrackLength(finalTrackLength/m);
+    eventInformation->GetKaonTrack(trackID)->SetLastVolume(finalVolumeName);
+        eventInformation->GetKaonTrack(trackID)->SetLastProcessName(myEndProcessName);
+          eventInformation->GetKaonTrack(trackID)->SetTimeOfLastProcess(finalTime/s);
+    eventInformation->GetKaonTrack(trackID)->SetLastCopyNo(finalCopyNo);
 
   }
 

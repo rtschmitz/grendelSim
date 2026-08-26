@@ -26,7 +26,7 @@ set(GRENDEL_SOURCES
   src/grGammaTrack.cc
   src/grGenFileName.cc
   src/grHistoManager.cc
-  src/grMCPTrack.cc
+  src/grKaonTrack.cc
   src/grMonopole.cc
   src/grMonopoleEquation.cc
   src/grMonopoleFieldMessenger.cc

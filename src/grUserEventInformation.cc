@@ -21,7 +21,7 @@ grUserEventInformation::grUserEventInformation()
   : runID(-1), eventID(-1), processID(0), eventWeight(0.),
     kaonCavern(false), gammaLastTrackID(-1),
     neutronLastTrackID(-1), muonLastTrackID(-1), electronLastTrackID(-1),
-    mcpLastTrackID(-1) {}
+    kaonLastTrackID(-1) {}
 
 grUserEventInformation::~grUserEventInformation() { Reset(); }
 
@@ -30,7 +30,7 @@ void grUserEventInformation::Reset() {
   DeleteAll(NeutronTracks);
   DeleteAll(MuonTracks);
   DeleteAll(ElectronTracks);
-  DeleteAll(MCPTracks);
+  DeleteAll(KaonTracks);
   ScintHits.clear(); // Geant4 owns sensitive-detector hits.
   kaonCavern = false;
 }
@@ -39,4 +39,4 @@ grGammaTrack* grUserEventInformation::GetGammaTrack(G4int id) { return FindTrack
 grNeutronTrack* grUserEventInformation::GetNeutronTrack(G4int id) { return FindTrack(NeutronTracks, id); }
 grMuonTrack* grUserEventInformation::GetMuonTrack(G4int id) { return FindTrack(MuonTracks, id); }
 grElectronTrack* grUserEventInformation::GetElectronTrack(G4int id) { return FindTrack(ElectronTracks, id); }
-grMCPTrack* grUserEventInformation::GetMCPTrack(G4int id) { return FindTrack(MCPTracks, id); }
+grKaonTrack* grUserEventInformation::GetKaonTrack(G4int id) { return FindTrack(KaonTracks, id); }

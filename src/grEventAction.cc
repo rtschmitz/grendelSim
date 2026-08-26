@@ -34,7 +34,7 @@ void grEventAction::BeginOfEventAction(const G4Event* event) {
   info->SetNeutronLastTrackID(-1);
   info->SetMuonLastTrackID(-1);
   info->SetElectronLastTrackID(-1);
-  info->SetMCPLastTrackID(-1);
+  info->SetKaonLastTrackID(-1);
   info->SetEventWeight(fEventWeight);
   info->SetProcessID(fProcessID);
 

@@ -5,7 +5,7 @@
 #include "globals.hh"
 #include "grElectronTrack.hh"
 #include "grGammaTrack.hh"
-#include "grMCPTrack.hh"
+#include "grKaonTrack.hh"
 #include "grMuonTrack.hh"
 #include "grNeutronTrack.hh"
 #include "grScintHit.hh"
@@ -39,8 +39,8 @@ public:
   G4int GetMuonLastTrackID() const { return muonLastTrackID; }
   void SetElectronLastTrackID(G4int value) { electronLastTrackID = value; }
   G4int GetElectronLastTrackID() const { return electronLastTrackID; }
-  void SetMCPLastTrackID(G4int value) { mcpLastTrackID = value; }
-  G4int GetMCPLastTrackID() const { return mcpLastTrackID; }
+  void SetKaonLastTrackID(G4int value) { kaonLastTrackID = value; }
+  G4int GetKaonLastTrackID() const { return kaonLastTrackID; }
 
   void AddGammaTrack(grGammaTrack* track) { GammaTracks.push_back(track); }
   grGammaTrack* GetGammaTrack(G4int trackID);
@@ -54,9 +54,9 @@ public:
   void AddElectronTrack(grElectronTrack* track) { ElectronTracks.push_back(track); }
   grElectronTrack* GetElectronTrack(G4int trackID);
   grElectronTrackVector* GetElectronTracks() { return &ElectronTracks; }
-  void AddMCPTrack(grMCPTrack* track) { MCPTracks.push_back(track); }
-  grMCPTrack* GetMCPTrack(G4int trackID);
-  grMCPTrackVector* GetMCPTracks() { return &MCPTracks; }
+  void AddKaonTrack(grKaonTrack* track) { KaonTracks.push_back(track); }
+  grKaonTrack* GetKaonTrack(G4int trackID);
+  grKaonTrackVector* GetKaonTracks() { return &KaonTracks; }
   void AddScintHit(grScintHit* hit) { ScintHits.push_back(hit); }
   grScintHitVector* GetScintHits() { return &ScintHits; }
 
@@ -65,7 +65,7 @@ private:
   grNeutronTrackVector NeutronTracks;
   grMuonTrackVector MuonTracks;
   grElectronTrackVector ElectronTracks;
-  grMCPTrackVector MCPTracks;
+  grKaonTrackVector KaonTracks;
   grScintHitVector ScintHits;
 
   G4int runID;
@@ -77,7 +77,7 @@ private:
   G4int neutronLastTrackID;
   G4int muonLastTrackID;
   G4int electronLastTrackID;
-  G4int mcpLastTrackID;
+  G4int kaonLastTrackID;
 };
 
 #endif
