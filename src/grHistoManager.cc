@@ -134,8 +134,8 @@ void grHistoManager::FillEventNtuple(grUserEventInformation& e) {
     o.electron_trackLength_m.push_back(t->GetTotalTrackLength());
     o.electron_initialProcess.push_back(text(t->GetFirstProcessName())); o.electron_finalProcess.push_back(text(t->GetLastProcessName()));
   }
-  const grMCPTrackVector& kaons = *e.GetMCPTracks();
-  for (std::size_t i=0; i<kaons.size(); ++i) { grMCPTrack* t=kaons[i]; FILL_TRACK(o,t,kaon) }
+  const grKaonTrackVector& kaons = *e.GetKaonTracks();
+  for (std::size_t i=0; i<kaons.size(); ++i) { grKaonTrack* t=kaons[i]; FILL_TRACK(o,t,kaon) }
 
   const grScintHitVector& hits = *e.GetScintHits();
   for (std::size_t i=0; i<hits.size(); ++i) {

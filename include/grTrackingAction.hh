@@ -29,7 +29,7 @@ private:
   G4bool neutronTrackStorage;
   G4bool muonTrackStorage;
   G4bool electronTrackStorage;
-  G4bool mcpTrackStorage;
+  G4bool kaonTrackStorage;
   G4int trackID;
   G4int parentID;
   G4String particleName;

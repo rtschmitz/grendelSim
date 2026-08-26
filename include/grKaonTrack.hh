@@ -1,23 +1,23 @@
 /*
- * grMCPTrack.hh
+ * grKaonTrack.hh
  *
  *  Created on: 7.19.2017
  *      Author: Ryan Schmitz
  */
 
-#ifndef MQMCPTRACK_HH_
-#define MQMCPTRACK_HH_
+#ifndef GRKAONTRACK_HH_
+#define GRKAONTRACK_HH_
 
 #include <iostream>
 #include <vector>
 #include "TString.h"
 //==============================================================================
-class grMCPTrack {
+class grKaonTrack {
 public:
-  grMCPTrack();
-  ~grMCPTrack();
-   const grMCPTrack& operator=(const grMCPTrack &right);
-     Int_t operator==(const grMCPTrack&) const;
+  grKaonTrack();
+  ~grKaonTrack();
+   const grKaonTrack& operator=(const grKaonTrack &right);
+     Int_t operator==(const grKaonTrack&) const;
 
 
   void SetTrackID(Int_t tID){trackID = tID; }
@@ -63,11 +63,11 @@ public:
         Int_t   GetFirstCopyNo()const{ return initialCopyNo; }
         Int_t   GetLastCopyNo()const{ return finalCopyNo; }
 
-  //MCP track information
+  //Kaon track information
 
 
   // order tracks accordong to timing information
-  static bool compareHits(grMCPTrack* const &a, grMCPTrack* const &b);
+  static bool compareHits(grKaonTrack* const &a, grKaonTrack* const &b);
   //friend std::ostream& operator<<(std::ostream &o,
   //    grNeutronTrack const &track);
 
@@ -97,6 +97,6 @@ public:
 
 };
 
-typedef std::vector<grMCPTrack*> grMCPTrackVector;
+typedef std::vector<grKaonTrack*> grKaonTrackVector;
 
-#endif /* MQMCPTRACK_HH_ */
+#endif /* GRKAONTRACK_HH_ */

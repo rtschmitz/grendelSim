@@ -1,15 +1,15 @@
 /*
- * grMCPTrack.cc
+ * grKaonTrack.cc
  *
  *  Created on: 7.19.2016
  *      Author: Ryan Schmitz
  */
-#include "grMCPTrack.hh"
+#include "grKaonTrack.hh"
 
 
 //==============================================================================
 
-grMCPTrack::grMCPTrack() :
+grKaonTrack::grKaonTrack() :
       trackID(-1),
       pdgID(0),
       initialProcessName(""),finalProcessName(""),
@@ -25,9 +25,9 @@ grMCPTrack::grMCPTrack() :
 
 
 //==============================================================================
-grMCPTrack::~grMCPTrack() {
+grKaonTrack::~grKaonTrack() {
 }
-const grMCPTrack& grMCPTrack::operator=(const grMCPTrack &right){
+const grKaonTrack& grKaonTrack::operator=(const grKaonTrack &right){
 
   trackID        = right.trackID           ;
   pdgID            = right.pdgID;
@@ -50,7 +50,7 @@ const grMCPTrack& grMCPTrack::operator=(const grMCPTrack &right){
   return *this;
 }
 
-Int_t grMCPTrack::operator==(const grMCPTrack& right) const
+Int_t grKaonTrack::operator==(const grKaonTrack& right) const
 {
   return (this==&right) ? 1 : 0;
 }
@@ -59,7 +59,7 @@ Int_t grMCPTrack::operator==(const grMCPTrack& right) const
 
 
 
-bool grMCPTrack::compareHits(grMCPTrack* const &a, grMCPTrack* const &b){
+bool grKaonTrack::compareHits(grKaonTrack* const &a, grKaonTrack* const &b){
   Double_t aTime = a->GetTimeOfLastProcess();
   Double_t bTime = b->GetTimeOfLastProcess();
   return (aTime < bTime);
