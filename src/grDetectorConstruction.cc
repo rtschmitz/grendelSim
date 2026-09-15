@@ -929,10 +929,18 @@ G4VPhysicalVolume* grDetectorConstruction::SetupGeometry() {
     for (G4int station = 0; station < 4; ++station) {
         const G4double base = station == 0 ? wallGap : wallGap + trackerThickness + stationGaps[station];
         std::ostringstream phiName, zName; phiName << "gargoyle_si_layer" << layerNames[station]; zName << phiName.str() << "_z";
+        // Offset the complete perimeter before splitting it into phi strips.
+        // Shared mitred vertices keep adjacent strips from overlapping at
+        // bends, including the larger offsets of the inner tracker layers.
+        const CrossPath phiInside = offsetPath(segmentedUpperPath, base);
+        const CrossPath phiOutside = offsetPath(segmentedUpperPath, base + sublayerThickness);
         for (std::size_t strip = 0; strip + 1 < segmentedUpperPath.size(); ++strip) {
-            CrossPath stripPath; stripPath.push_back(segmentedUpperPath[strip]); stripPath.push_back(segmentedUpperPath[strip + 1]);
+            const CrossPath stripProfile = {
+                phiInside[strip], phiInside[strip + 1],
+                phiOutside[strip + 1], phiOutside[strip]
+            };
             std::ostringstream stripName; stripName << phiName.str() << "_" << strip;
-            placeActive(stripName.str(), bandProfile(stripPath, base, sublayerThickness),
+            placeActive(stripName.str(), stripProfile,
                         phiIDs[station] + static_cast<G4int>(strip),
                         (strip % 2) ? alternateColour(phiColours[station]) : phiColours[station]);
         }
