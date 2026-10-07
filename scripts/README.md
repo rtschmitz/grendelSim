@@ -44,7 +44,19 @@ numba 0.60, and ROOT 6.24 for reading.
 
 ## Running
 
-Each script processes the files it is given and writes one output. Jobs
+The whole chain on one raw file, all events:
+
+```bash
+python3 scripts/run_chain.py grendelSim.root --outdir out/
+# -> out/grendelSim_{cells,hits,tracklets,vertices,cutflow}.root
+```
+
+`--entry-start/--entry-stop` select a range of events. `--stageN-args "..."`
+passes extra options to stage N (e.g. `--stage3-args "--stations 0,1,2,3"`).
+`--first-stage N` reruns from stage N, reusing the earlier outputs in
+`--outdir`. The wrapper stops if any stage fails.
+
+The stages can also be run individually. Each script processes the files it is given and writes one output. Jobs
 can be split however you like: stage 1 by entry range of the raw file,
 later stages one job per input file. Results don't depend on the split,
 including the smearing.
@@ -66,6 +78,7 @@ existing output file is replaced.
 
 | File | Purpose |
 |---|---|
+| `run_chain.py` | runs stages 1–5 on one raw file, feeding each output into the next. |
 | `stage1_consolidate.py` | raw crossings → cells. Pairs each particle's entry/exit crossings into segments with net deposit KE_in − KE_out (secondaries' energy is subtracted from the parent), spreads them along the path into 1 cm tracker cells / 10 cm veto cells, and keeps E > 1 keV with all contributors. |
 | `stage2_trackerhits.py` | cells → tracker hits. Touching, time-consistent sublayer clusters, 1.5 MeV MIP threshold, one-to-one phi–z matching (closest cells < 2.5 cm, \|Δt\| < 3 ns), 0.7 ns / 3 mm reproducible smearing, truth and smeared values stored; veto counts per element. |
 | `stage3_tracklets.py` | hits → tracklets. Seeds by angle, timing and same-side crossing, extends and fits a line, picks the non-overlapping set, then fits time, direction, through-going partner and truth. `--truth` uses unsmeared hits. |
